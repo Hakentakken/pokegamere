@@ -1,14 +1,13 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 export default function Navbar() {
   const [dark, setDark] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  const navigate = useNavigate();
-
-  // 🌙 Force dark mode
+  // 🌙 Dark mode
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
@@ -17,92 +16,123 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
 
-  // 🔐 Check auth state
+  // 🔐 Auth
   useEffect(() => {
-    checkUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
-      checkUser();
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
     };
+    checkUser();
   }, []);
 
-  const checkUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    setUser(data.user);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate("/");
-  };
-
   return (
-    <nav className="sticky top-0 z-50 backdrop-blur-xl bg-black/40 border-b border-white/10">
-      
-      <div className="max-w-6xl mx-auto flex justify-between items-center px-4 py-3">
+    <>
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-black/40 border-b border-white/10">
+        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
 
-        {/* 🔥 Logo */}
-        <h1
-          onClick={() => navigate("/")}
-          className="text-2xl font-extrabold text-red-500 tracking-wide cursor-pointer hover:scale-105 transition"
-        >
-          PokéGamere
-        </h1>
+          {/* LOGO */}
+          <h1 className="text-2xl font-extrabold text-red-500">
+            PokéForge
+          </h1>
 
-        {/* 🧭 Links */}
-        <div className="hidden md:flex gap-6 text-sm text-gray-300 items-center">
-          <Link to="/" className="hover:text-red-500 transition">Home</Link>
-          <Link to="/hacks" className="hover:text-red-500 transition">Hacks</Link>
-          <Link to="/cheats" className="hover:text-red-500 transition">Cheats</Link>
-          <Link to="/emulators" className="hover:text-red-500 transition">Emulators</Link>
-          <Link to="/patcher" className="hover:text-red-500 transition">Patcher</Link>
-          <Link to="/qa" className="hover:text-red-500 transition">Q&A</Link>
+          {/* DESKTOP */}
+          <div className="hidden md:flex gap-6 text-sm text-gray-300 items-center">
+            <Link to="/" className="hover:text-red-500">Home</Link>
+            <Link to="/hacks" className="hover:text-red-500">Hacks</Link>
+            <Link to="/cheats" className="hover:text-red-500">Cheats</Link>
+            <Link to="/emulators" className="hover:text-red-500">Emulators</Link>
+            <Link to="/patcher" className="hover:text-red-500">Patcher</Link>
+            <Link to="/qa" className="hover:text-red-500">Q&A</Link>
+            <Link to="/about" className="hover:text-red-500">About</Link>
+            <Link to="/privacy" className="hover:text-red-500">Privacy</Link>
+
+            {user ? (
+              <Link to="/admin" className="text-green-400">Admin</Link>
+            ) : (
+              <Link to="/login" className="text-blue-400">Login</Link>
+            )}
+
+            <button
+              onClick={() => setDark(!dark)}
+              className="bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20"
+            >
+              {dark ? "☀️" : "🌙"}
+            </button>
+          </div>
+
+          {/* MOBILE BUTTON */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="md:hidden text-3xl text-white"
+          >
+            ☰
+          </button>
+        </div>
+      </nav>
+
+      {/* 🔥 OVERLAY */}
+      {menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+        />
+      )}
+
+      {/* 🚀 SLIDE DRAWER */}
+      <div
+        className={`fixed top-0 right-0 h-full w-72 bg-black border-l border-white/10 z-50 transform transition-transform duration-300 ${
+          menuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* HEADER */}
+        <div className="flex justify-between items-center p-4 border-b border-white/10">
+          <h2 className="text-lg font-bold text-red-500">Menu</h2>
+
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="text-xl"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* ⚙️ Right Side */}
-        <div className="flex items-center gap-3">
+        {/* LINKS */}
+        <div className="flex flex-col p-4 gap-4 text-gray-300">
 
-          {/* 🌙 Toggle */}
-          <button
-            onClick={() => setDark(!dark)}
-            className="bg-white/10 px-3 py-1 rounded-lg text-sm hover:bg-white/20 transition"
-          >
-            {dark ? "☀️" : "🌙"}
-          </button>
+          <Link to="/" onClick={()=>setMenuOpen(false)}>Home</Link>
+          <Link to="/hacks" onClick={()=>setMenuOpen(false)}>Hacks</Link>
+          <Link to="/cheats" onClick={()=>setMenuOpen(false)}>Cheats</Link>
+          <Link to="/emulators" onClick={()=>setMenuOpen(false)}>Emulators</Link>
+          <Link to="/patcher" onClick={()=>setMenuOpen(false)}>Patcher</Link>
+          <Link to="/qa" onClick={()=>setMenuOpen(false)}>Q&A</Link>
 
-          {/* 🔐 Auth Buttons */}
-          {!user ? (
-            <button
-              onClick={() => navigate("/login")}
-              className="bg-red-500 px-4 py-1.5 rounded-lg text-sm hover:bg-red-600 transition"
-            >
-              Login
-            </button>
+          <hr className="border-white/10"/>
+
+          <Link to="/about" onClick={()=>setMenuOpen(false)}>About</Link>
+          <Link to="/privacy" onClick={()=>setMenuOpen(false)}>Privacy</Link>
+
+          <hr className="border-white/10"/>
+
+          {user ? (
+            <Link to="/admin" onClick={()=>setMenuOpen(false)} className="text-green-400">
+              Admin Panel
+            </Link>
           ) : (
-            <>
-              <button
-                onClick={() => navigate("/admin")}
-                className="bg-green-500 px-4 py-1.5 rounded-lg text-sm hover:bg-green-600 transition"
-              >
-                Admin
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="bg-gray-700 px-4 py-1.5 rounded-lg text-sm hover:bg-gray-600 transition"
-              >
-                Logout
-              </button>
-            </>
+            <Link to="/login" onClick={()=>setMenuOpen(false)} className="text-blue-400">
+              Login
+            </Link>
           )}
 
+          {/* THEME */}
+          <button
+            onClick={() => setDark(!dark)}
+            className="bg-white/10 px-3 py-2 rounded-lg mt-4"
+          >
+            Toggle Theme
+          </button>
         </div>
       </div>
-    </nav>
+    </>
   );
 }

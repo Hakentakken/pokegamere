@@ -4,7 +4,9 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
 import Login from "./pages/Login";
-
+import About from "./pages/About";
+import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import Hacks from "./pages/Hacks";
 import HackDetail from "./pages/HackDetail";
@@ -24,6 +26,9 @@ export default function App() {
 
         <main className="flex-1 p-4">
           <Routes>
+          <Route path="/about" element={<About />} />
+<Route path="/privacy" element={<Privacy />} />
+<Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<Login />} />
             <Route path="/" element={<Home />} />
             <Route path="/hacks" element={<Hacks />} />

@@ -19,7 +19,10 @@ export default function Admin() {
   const [rating, setRating] = useState(0);
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [downloadLink, setDownloadLink] = useState(""); // ✅ NEW
+  const [downloadLink, setDownloadLink] = useState("");
+
+  // 🆕 Screenshots (links)
+  const [screenshots, setScreenshots] = useState<string[]>([""]);
 
   // 🧩 CHEAT FORM
   const [cheatTitle, setCheatTitle] = useState("");
@@ -49,7 +52,7 @@ export default function Admin() {
     init();
   }, []);
 
-  // 📦 FETCH DATA
+  // 📦 FETCH
   const fetchAll = async () => {
     const { data: hacksData } = await supabase
       .from("hacks")
@@ -67,12 +70,22 @@ export default function Admin() {
   // ❌ DELETE
   const deleteItem = async (table: string, id: number) => {
     if (!confirm("Delete this item?")) return;
-
     await supabase.from(table).delete().eq("id", id);
     fetchAll();
   };
 
-  // 🚀 UPLOAD HACK (UPDATED)
+  // 🆕 HANDLE SCREENSHOT INPUT
+  const handleScreenshotChange = (index: number, value: string) => {
+    const updated = [...screenshots];
+    updated[index] = value;
+    setScreenshots(updated);
+  };
+
+  const addScreenshotField = () => {
+    setScreenshots([...screenshots, ""]);
+  };
+
+  // 🚀 UPLOAD HACK
   const uploadHack = async () => {
     if (!coverFile || !downloadLink) {
       alert("Upload cover + add download link");
@@ -80,7 +93,6 @@ export default function Admin() {
     }
 
     try {
-      // Upload cover
       const coverPath = `covers/${Date.now()}-${coverFile.name}`;
       await supabase.storage.from("hacks").upload(coverPath, coverFile);
 
@@ -88,7 +100,6 @@ export default function Admin() {
         .from("hacks")
         .getPublicUrl(coverPath).data.publicUrl;
 
-      // Insert DB
       await supabase.from("hacks").insert({
         title,
         author,
@@ -98,12 +109,13 @@ export default function Admin() {
         rating,
         description,
         cover_image: coverUrl,
-        download_link: downloadLink, // ✅ NEW
+        download_link: downloadLink,
+        screenshots: screenshots.filter((s) => s.trim() !== ""), // ✅ save array
       });
 
       alert("Hack uploaded 🚀");
 
-      // Reset form
+      // reset
       setTitle("");
       setAuthor("");
       setBaseGame("");
@@ -113,6 +125,7 @@ export default function Admin() {
       setDescription("");
       setCoverFile(null);
       setDownloadLink("");
+      setScreenshots([""]);
 
       fetchAll();
     } catch (err) {
@@ -121,7 +134,7 @@ export default function Admin() {
     }
   };
 
-  // 🧩 ADD CHEAT
+  // 🧩 CHEAT
   const addCheat = async () => {
     await supabase.from("cheats").insert({
       title: cheatTitle,
@@ -134,7 +147,7 @@ export default function Admin() {
     fetchAll();
   };
 
-  // 🎮 ADD EMULATOR
+  // 🎮 EMULATOR
   const addEmu = async () => {
     await supabase.from("emulators").insert({
       name: emuName,
@@ -188,25 +201,7 @@ export default function Admin() {
         {/* ================= HACKS ================= */}
         {activeTab === "hack" && (
           <>
-            <h2 className="text-xl font-bold mb-4">Existing Hacks</h2>
-
-            {hacks.length === 0 ? (
-              <p className="text-gray-400 mb-6">No hacks uploaded yet</p>
-            ) : (
-              hacks.map((h) => (
-                <div key={h.id} className="glass p-3 mb-3 rounded flex justify-between">
-                  <span>{h.title}</span>
-                  <button
-                    onClick={() => deleteItem("hacks", h.id)}
-                    className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))
-            )}
-
-            <h2 className="text-xl font-bold mt-8 mb-2">Upload Hack</h2>
+            <h2 className="text-xl font-bold mb-4">Upload Hack</h2>
 
             <div className="space-y-2">
               <input placeholder="Title" onChange={(e)=>setTitle(e.target.value)} className="input"/>
@@ -216,14 +211,29 @@ export default function Admin() {
               <input placeholder="Status" onChange={(e)=>setStatus(e.target.value)} className="input"/>
               <textarea placeholder="Description" onChange={(e)=>setDescription(e.target.value)} className="input"/>
 
-              <p>Cover Image</p>
               <input type="file" onChange={(e)=>setCoverFile(e.target.files?.[0]||null)} />
 
               <input
-                placeholder="Download Link (Drive / MEGA)"
+                placeholder="Download Link"
                 onChange={(e)=>setDownloadLink(e.target.value)}
                 className="input"
               />
+
+              {/* 🆕 SCREENSHOTS */}
+              <p className="mt-4 font-semibold">Screenshots (Image URLs)</p>
+              {screenshots.map((s, i) => (
+                <input
+                  key={i}
+                  value={s}
+                  onChange={(e)=>handleScreenshotChange(i, e.target.value)}
+                  placeholder={`Screenshot ${i+1}`}
+                  className="input"
+                />
+              ))}
+
+              <button onClick={addScreenshotField} className="text-sm text-blue-400">
+                + Add More
+              </button>
             </div>
 
             <button onClick={uploadHack} className="btn mt-4">
@@ -232,7 +242,34 @@ export default function Admin() {
           </>
         )}
 
-        {/* KEEP CHEATS + EMULATORS SAME */}
+        {/* ================= CHEATS ================= */}
+        {activeTab === "cheat" && (
+          <>
+            <h2 className="text-xl font-bold mb-4">Add Cheat</h2>
+
+            <input placeholder="Title" onChange={(e)=>setCheatTitle(e.target.value)} className="input"/>
+            <input placeholder="Game" onChange={(e)=>setCheatGame(e.target.value)} className="input"/>
+            <textarea placeholder="Code" onChange={(e)=>setCheatCode(e.target.value)} className="input"/>
+            <textarea placeholder="Description" onChange={(e)=>setCheatDesc(e.target.value)} className="input"/>
+
+            <button onClick={addCheat} className="btn mt-3">Add Cheat</button>
+          </>
+        )}
+
+        {/* ================= EMULATORS ================= */}
+        {activeTab === "emulator" && (
+          <>
+            <h2 className="text-xl font-bold mb-4">Add Emulator</h2>
+
+            <input placeholder="Name" onChange={(e)=>setEmuName(e.target.value)} className="input"/>
+            <input placeholder="Platform" onChange={(e)=>setEmuPlatform(e.target.value)} className="input"/>
+            <textarea placeholder="Description" onChange={(e)=>setEmuDesc(e.target.value)} className="input"/>
+            <input placeholder="Download Link" onChange={(e)=>setEmuLink(e.target.value)} className="input"/>
+
+            <button onClick={addEmu} className="btn mt-3">Add Emulator</button>
+          </>
+        )}
+
       </div>
     </PageWrapper>
   );
