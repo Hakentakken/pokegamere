@@ -222,15 +222,44 @@ export default function Admin() {
             <input placeholder="Status" onChange={(e)=>setStatus(e.target.value)} className="input"/>
             <textarea placeholder="Description" onChange={(e)=>setDescription(e.target.value)} className="input"/>
 
-            <input type="file" onChange={(e)=>setCoverFile(e.target.files?.[0]||null)} />
+            {/* ✅ COVER UPLOAD FIXED */}
+            <div className="mt-3">
+              <p className="mb-1 font-semibold">Cover Image</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-red-500 file:text-white
+                  hover:file:bg-red-600"
+              />
+              {coverFile && (
+                <p className="text-green-400 text-sm mt-1">
+                  Selected: {coverFile.name}
+                </p>
+              )}
+            </div>
+
             <input placeholder="Download Link" onChange={(e)=>setDownloadLink(e.target.value)} className="input"/>
 
-            <p className="mt-3">Screenshots</p>
+            {/* SCREENSHOTS */}
+            <p className="mt-3 font-semibold">Screenshots</p>
             {screenshots.map((s, i) => (
-              <input key={i} value={s} onChange={(e)=>handleScreenshotChange(i,e.target.value)} className="input"/>
+              <input
+                key={i}
+                value={s}
+                onChange={(e)=>handleScreenshotChange(i,e.target.value)}
+                className="input"
+                placeholder={`Screenshot ${i+1}`}
+              />
             ))}
 
-            <button onClick={addScreenshotField}>+ Add Screenshot</button>
+            <button onClick={addScreenshotField} className="text-blue-400 text-sm">
+              + Add Screenshot
+            </button>
 
             <button onClick={uploadHack} className="btn mt-4">Upload Hack</button>
           </>
