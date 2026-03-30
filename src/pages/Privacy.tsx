@@ -10,7 +10,7 @@ export default function Privacy() {
         </h1>
 
         <p className="text-gray-300 mb-4">
-          PokéForge respects your privacy. We do not collect personal data unless necessary.
+          PokéSmith respects your privacy. We do not collect personal data unless necessary.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2">Cookies</h2>

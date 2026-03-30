@@ -33,7 +33,7 @@ export default function Navbar() {
 
           {/* LOGO */}
           <h1 className="text-2xl font-extrabold text-red-500">
-            PokéForge
+            PokéSmith
           </h1>
 
           {/* DESKTOP */}

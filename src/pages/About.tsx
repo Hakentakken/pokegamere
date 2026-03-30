@@ -6,11 +6,11 @@ export default function About() {
       <div className="min-h-screen text-white p-6 max-w-4xl mx-auto">
 
         <h1 className="text-4xl font-bold text-red-500 mb-6">
-          About PokéForge
+          About PokéSmith
         </h1>
 
         <p className="text-gray-300 mb-4">
-          PokéForge is a platform dedicated to Pokémon ROM hacks, cheats, and emulators.
+          PokéSmith is a platform dedicated to Pokémon ROM hacks, cheats, and emulators.
           Our goal is to provide a clean and simple experience for discovering fan-made Pokémon content.
         </p>
 

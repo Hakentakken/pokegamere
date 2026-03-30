@@ -59,7 +59,7 @@ export default function Home() {
         <div className="text-center py-20 px-4 bg-gradient-to-b from-black via-gray-900 to-black">
           
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-red-500">
-            PokéForge
+            PokéSmith
           </h1>
 
           <p className="text-gray-300 text-lg mb-4">
@@ -164,7 +164,7 @@ export default function Home() {
 
         {/* 🔻 FOOTER (ADS READY) */}
         <div className="border-t border-white/10 py-6 text-center text-sm text-gray-400">
-          <p>© {new Date().getFullYear()} PokéForge</p>
+          <p>© {new Date().getFullYear()} PokéSmith</p>
 
           <div className="flex justify-center gap-4 mt-2 flex-wrap">
             <button onClick={() => navigate("/about")} className="hover:text-white">
