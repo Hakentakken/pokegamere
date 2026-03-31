@@ -16,7 +16,6 @@ export default function HackDetail() {
 
   const fetchHack = async () => {
     try {
-      // 🔥 FETCH MAIN HACK
       const { data, error } = await supabase
         .from("hacks")
         .select("*")
@@ -24,10 +23,8 @@ export default function HackDetail() {
         .single();
 
       if (error) throw error;
-
       setHack(data);
 
-      // 🔥 FETCH RELATED (exclude current)
       const { data: relatedData } = await supabase
         .from("hacks")
         .select("*")
@@ -50,50 +47,78 @@ export default function HackDetail() {
     return <div className="text-white text-center mt-20">Hack not found</div>;
   }
 
+  // ---- HELPERS ----
+
+  // Safely parse arrays (handles both real arrays and null/undefined)
+  const getArray = (val: any): string[] => {
+    if (Array.isArray(val)) return val.filter((v) => typeof v === "string" && v.trim() !== "");
+    return [];
+  };
+
+  // Rating stars — no repeat(0) bug
+  const renderRating = (rating: any) => {
+    const num = parseFloat(rating) || 0;
+    const full = Math.floor(num);
+    const half = num % 1 >= 0.5;
+    const empty = 5 - full - (half ? 1 : 0);
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex text-yellow-400 text-xl">
+          {"★".repeat(full)}
+          {half ? "½" : ""}
+          <span className="text-gray-600">{"★".repeat(empty)}</span>
+        </div>
+        <span className="text-gray-400 text-sm">{num}/5</span>
+      </div>
+    );
+  };
+
+  const screenshots = getArray(hack.screenshots);
+  const features = getArray(hack.features);
+
+  // Section heading style
+  const SectionHeading = ({ children }: { children: React.ReactNode }) => (
+    <div className="mt-10 mb-4">
+      <h2 className="text-2xl font-bold text-white">{children}</h2>
+      <div className="h-0.5 bg-gray-700 mt-2" />
+    </div>
+  );
+
   return (
     <PageWrapper>
       <div className="p-4 max-w-5xl mx-auto text-white">
 
-        {/* MAIN */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* ---- MAIN INFO ---- */}
+        <div className="grid md:grid-cols-2 gap-8">
 
           <img
             src={hack.cover_image || "https://via.placeholder.com/500x300"}
             alt={hack.title}
-            className="w-full rounded-xl object-cover"
+            className="w-full rounded-xl object-cover max-h-80 md:max-h-full"
           />
 
           <div className="space-y-4">
             <h1 className="text-3xl font-bold">{hack.title}</h1>
 
-            <p className="text-gray-400">
-              by {hack.author || "Unknown"}
-            </p>
+            <p className="text-gray-400">by {hack.author || "Unknown"}</p>
 
             {/* BADGES */}
             <div className="flex gap-2 text-sm flex-wrap">
-              <span className="bg-red-500 px-2 py-1 rounded">
-                {hack.base_game || "Unknown"}
-              </span>
-              <span className="bg-blue-500 px-2 py-1 rounded">
-                {hack.platform || "Unknown"}
-              </span>
-              <span className="bg-green-500 px-2 py-1 rounded">
-                {hack.status || "Unknown"}
-              </span>
+              {hack.base_game && (
+                <span className="bg-red-500 px-2 py-1 rounded">{hack.base_game}</span>
+              )}
+              {hack.platform && (
+                <span className="bg-blue-500 px-2 py-1 rounded">{hack.platform}</span>
+              )}
+              {hack.status && (
+                <span className="bg-green-500 px-2 py-1 rounded">{hack.status}</span>
+              )}
             </div>
 
             {/* RATING */}
-            <div className="text-yellow-400 text-lg">
-              {"⭐".repeat(Math.round(hack.rating || 0))} ({hack.rating || 0})
-            </div>
+            {renderRating(hack.rating)}
 
-            {/* DESCRIPTION */}
-            <p className="text-gray-300">
-              {hack.description || "No description available."}
-            </p>
-
-            {/* 🔥 DOWNLOAD BUTTON (UPDATED) */}
+            {/* DOWNLOAD */}
             {hack.download_link ? (
               <a
                 href={hack.download_link}
@@ -104,62 +129,85 @@ export default function HackDetail() {
                 Download ROM / Patch
               </a>
             ) : (
-              <div className="text-gray-400">
-                🚧 Download link not available
-              </div>
+              <div className="text-gray-400">🚧 Download link not available</div>
             )}
-
           </div>
         </div>
 
-        {/* SCREENSHOTS */}
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">Screenshots</h2>
+        {/* ---- DESCRIPTION ---- */}
+        <SectionHeading>📖 Description</SectionHeading>
+        <p className="text-gray-300 leading-relaxed">
+          {hack.description || "No description available."}
+        </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <img src="https://via.placeholder.com/300" className="rounded" />
-            <img src="https://via.placeholder.com/300" className="rounded" />
-            <img src="https://via.placeholder.com/300" className="rounded" />
-          </div>
-        </div>
-
-        {/* HOW TO PLAY */}
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">How to Play</h2>
-
-          <ol className="list-decimal list-inside space-y-2 text-gray-300">
-            <li>Download base ROM</li>
-            <li>Download patch / ROM</li>
-            <li>Use patcher tool (if needed)</li>
-            <li>Play on emulator</li>
-          </ol>
-        </div>
-
-        {/* RELATED HACKS */}
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-4">Related Hacks</h2>
-
-          {related.length === 0 ? (
-            <p className="text-gray-400">No related hacks found</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {related.map((h) => (
-                <HackCard
-                  key={h.id}
-                  id={String(h.id)}
-                  title={h.title}
-                  author={h.author}
-                  rating={h.rating}
-                  baseGame={h.base_game}
-                  platform={h.platform}
-                  status={h.status}
-                  coverImage={h.cover_image}
-                  description={h.description}
-                />
+        {/* ---- FEATURES ---- */}
+        {features.length > 0 && (
+          <>
+            <SectionHeading>✨ Features</SectionHeading>
+            <ul className="space-y-2">
+              {features.map((f, i) => (
+                <li key={i} className="flex items-start gap-2 text-gray-300">
+                  <span className="text-red-400 mt-1">▸</span>
+                  <span>{f}</span>
+                </li>
               ))}
-            </div>
-          )}
-        </div>
+            </ul>
+          </>
+        )}
+
+        {/* ---- SCREENSHOTS ---- */}
+        <SectionHeading>🖼️ Screenshots</SectionHeading>
+        {screenshots.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {screenshots.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={`Screenshot ${i + 1}`}
+                className="rounded-lg w-full object-cover aspect-video bg-gray-800"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x180?text=No+Image";
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">No screenshots available.</p>
+        )}
+
+        {/* ---- HOW TO PLAY ---- */}
+        <SectionHeading>🎮 How to Play</SectionHeading>
+        <ol className="list-decimal list-inside space-y-2 text-gray-300">
+          <li>Download the base ROM for the game</li>
+          <li>Download the patch / ROM file above</li>
+          <li>Use our <a href="/patcher" className="text-red-400 hover:underline">Patcher tool</a> to apply the patch (if it's a .ips/.bps file)</li>
+          <li>Open the patched ROM in your emulator</li>
+          <li>If it's a fan game (.exe), no emulator needed — run directly on PC</li>
+          <li>On Android, use <span className="text-red-400">JoiPlay</span> for fan games</li>
+        </ol>
+
+        {/* ---- RELATED HACKS ---- */}
+        <SectionHeading>🕹️ Related Hacks</SectionHeading>
+        {related.length === 0 ? (
+          <p className="text-gray-400">No related hacks found.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {related.map((h) => (
+              <HackCard
+                key={h.id}
+                id={String(h.id)}
+                title={h.title}
+                author={h.author}
+                rating={h.rating}
+                baseGame={h.base_game}
+                platform={h.platform}
+                status={h.status}
+                coverImage={h.cover_image}
+                description={h.description}
+              />
+            ))}
+          </div>
+        )}
 
       </div>
     </PageWrapper>

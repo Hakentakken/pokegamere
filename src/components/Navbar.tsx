@@ -32,9 +32,12 @@ export default function Navbar() {
         <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
 
           {/* LOGO */}
-          <h1 className="text-2xl font-extrabold text-red-500">
-            PokéSmith
-          </h1>
+          <Link
+  to="/"
+  className="text-2xl font-extrabold text-red-500 tracking-wide transition-all duration-300 hover:text-red-400 hover:scale-105"
+>
+  Poké<span className="text-white">Smith</span>
+</Link>
 
           {/* DESKTOP */}
           <div className="hidden md:flex gap-6 text-sm text-gray-300 items-center">
