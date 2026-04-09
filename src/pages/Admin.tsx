@@ -82,7 +82,27 @@ export default function Admin() {
     fetchAll();
   };
 
-  // ✏️ OPEN EDIT
+  // 🔧 PARSE POSTGRES ARRAY — handles {url1,url2} string OR real JS array
+  const parsePostgresArray = (val: any): string[] => {
+    if (!val) return [""];
+    // Real JS array from Supabase
+    if (Array.isArray(val)) {
+      const filtered = val.filter((v: any) => typeof v === "string" && v.trim() !== "");
+      return filtered.length > 0 ? filtered : [""];
+    }
+    // Postgres text[] returned as string like: {url1,url2} or {"url1","url2"}
+    if (typeof val === "string") {
+      const inner = val.trim().replace(/^\{/, "").replace(/\}$/, "");
+      if (!inner) return [""];
+      return inner
+        .split(",")
+        .map((s) => s.trim().replace(/^"/, "").replace(/"$/, ""))
+        .filter((s) => s !== "");
+    }
+    return [""];
+  };
+
+  // ✏️ OPEN EDIT — now correctly parses Postgres array format
   const openEdit = (hack: any) => {
     setEditingHack(hack);
     setEditTitle(hack.title || "");
@@ -93,16 +113,8 @@ export default function Admin() {
     setEditRating(hack.rating || 0);
     setEditDescription(hack.description || "");
     setEditDownloadLink(hack.download_link || "");
-    setEditScreenshots(
-      Array.isArray(hack.screenshots) && hack.screenshots.length > 0
-        ? hack.screenshots
-        : [""]
-    );
-    setEditFeatures(
-      Array.isArray(hack.features) && hack.features.length > 0
-        ? hack.features
-        : [""]
-    );
+    setEditScreenshots(parsePostgresArray(hack.screenshots));
+    setEditFeatures(parsePostgresArray(hack.features));
   };
 
   // 💾 SAVE EDIT

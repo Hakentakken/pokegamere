@@ -47,15 +47,30 @@ export default function HackDetail() {
     return <div className="text-white text-center mt-20">Hack not found</div>;
   }
 
-  // ---- HELPERS ----
-
-  // Safely parse arrays (handles both real arrays and null/undefined)
+  // ---- ROBUST ARRAY PARSER ----
+  // Handles: real JS array, Postgres string "{url1,url2}", null, undefined
   const getArray = (val: any): string[] => {
-    if (Array.isArray(val)) return val.filter((v) => typeof v === "string" && v.trim() !== "");
+    if (!val) return [];
+
+    // Already a proper JS array
+    if (Array.isArray(val)) {
+      return val.filter((v: any) => typeof v === "string" && v.trim() !== "");
+    }
+
+    // Postgres returns text[] as string like: {url1,url2} or {"url1","url2"}
+    if (typeof val === "string") {
+      const inner = val.trim().replace(/^\{/, "").replace(/\}$/, "");
+      if (!inner) return [];
+      return inner
+        .split(",")
+        .map((s) => s.trim().replace(/^"/, "").replace(/"$/, ""))
+        .filter((s) => s !== "");
+    }
+
     return [];
   };
 
-  // Rating stars — no repeat(0) bug
+  // Rating stars
   const renderRating = (rating: any) => {
     const num = parseFloat(rating) || 0;
     const full = Math.floor(num);
@@ -76,7 +91,6 @@ export default function HackDetail() {
   const screenshots = getArray(hack.screenshots);
   const features = getArray(hack.features);
 
-  // Section heading style
   const SectionHeading = ({ children }: { children: React.ReactNode }) => (
     <div className="mt-10 mb-4">
       <h2 className="text-2xl font-bold text-white">{children}</h2>
@@ -90,7 +104,6 @@ export default function HackDetail() {
 
         {/* ---- MAIN INFO ---- */}
         <div className="grid md:grid-cols-2 gap-8">
-
           <img
             src={hack.cover_image || "https://via.placeholder.com/500x300"}
             alt={hack.title}
@@ -99,10 +112,8 @@ export default function HackDetail() {
 
           <div className="space-y-4">
             <h1 className="text-3xl font-bold">{hack.title}</h1>
-
             <p className="text-gray-400">by {hack.author || "Unknown"}</p>
 
-            {/* BADGES */}
             <div className="flex gap-2 text-sm flex-wrap">
               {hack.base_game && (
                 <span className="bg-red-500 px-2 py-1 rounded">{hack.base_game}</span>
@@ -115,10 +126,8 @@ export default function HackDetail() {
               )}
             </div>
 
-            {/* RATING */}
             {renderRating(hack.rating)}
 
-            {/* DOWNLOAD */}
             {hack.download_link ? (
               <a
                 href={hack.download_link}
@@ -166,7 +175,8 @@ export default function HackDetail() {
                 alt={`Screenshot ${i + 1}`}
                 className="rounded-lg w-full object-cover aspect-video bg-gray-800"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x180?text=No+Image";
+                  (e.target as HTMLImageElement).src =
+                    "https://via.placeholder.com/300x180?text=No+Image";
                 }}
               />
             ))}
@@ -180,10 +190,18 @@ export default function HackDetail() {
         <ol className="list-decimal list-inside space-y-2 text-gray-300">
           <li>Download the base ROM for the game</li>
           <li>Download the patch / ROM file above</li>
-          <li>Use our <a href="/patcher" className="text-red-400 hover:underline">Patcher tool</a> to apply the patch (if it's a .ips/.bps file)</li>
+          <li>
+            Use our{" "}
+            <a href="/patcher" className="text-red-400 hover:underline">
+              Patcher tool
+            </a>{" "}
+            to apply the patch (if it's a .ips/.bps file)
+          </li>
           <li>Open the patched ROM in your emulator</li>
           <li>If it's a fan game (.exe), no emulator needed — run directly on PC</li>
-          <li>On Android, use <span className="text-red-400">JoiPlay</span> for fan games</li>
+          <li>
+            On Android, use <span className="text-red-400">JoiPlay</span> for fan games
+          </li>
         </ol>
 
         {/* ---- RELATED HACKS ---- */}
