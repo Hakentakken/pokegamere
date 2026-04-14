@@ -9,7 +9,7 @@ export default defineConfig({
     sitemap({
       hostname: 'https://pokesmith.com',
       dynamicRoutes: [
-        '/',
+        
         '/hacks',
         '/cheats',
         '/emulators',
