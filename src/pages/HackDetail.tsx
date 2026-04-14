@@ -23,6 +23,9 @@ export default function HackDetail() {
         .single();
 
       if (error) throw error;
+
+      console.log("RAW screenshots:", data.screenshots); // DEBUG
+
       setHack(data);
 
       const { data: relatedData } = await supabase
@@ -39,6 +42,54 @@ export default function HackDetail() {
     }
   };
 
+  // 🔥 CLEAN + ROBUST ARRAY PARSER
+  const getArray = (val: any): string[] => {
+    if (!val) return [];
+
+    const clean = (url: string) =>
+      url.trim().replace(/^"|"$/g, "");
+
+    // Proper JS array
+    if (Array.isArray(val)) {
+      return val.map(clean).filter((v) => v !== "");
+    }
+
+    // Postgres string {url1,url2}
+    if (typeof val === "string") {
+      const inner = val.replace(/^\{|\}$/g, "");
+      if (!inner) return [];
+      return inner
+        .split(",")
+        .map(clean)
+        .filter((v) => v !== "");
+    }
+
+    return [];
+  };
+
+  // ⭐ Rating
+  const renderRating = (rating: any) => {
+    const num = parseFloat(rating) || 0;
+    const full = Math.floor(num);
+    const half = num % 1 >= 0.5;
+    const empty = 5 - full - (half ? 1 : 0);
+
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex text-yellow-400 text-xl">
+          {"★".repeat(full)}
+          {half ? "½" : ""}
+          <span className="text-gray-600">
+            {"★".repeat(empty)}
+          </span>
+        </div>
+        <span className="text-gray-400 text-sm">
+          {num}/5
+        </span>
+      </div>
+    );
+  };
+
   if (loading) {
     return <div className="text-white text-center mt-20">Loading...</div>;
   }
@@ -47,49 +98,10 @@ export default function HackDetail() {
     return <div className="text-white text-center mt-20">Hack not found</div>;
   }
 
-  // ---- ROBUST ARRAY PARSER ----
-  // Handles: real JS array, Postgres string "{url1,url2}", null, undefined
-  const getArray = (val: any): string[] => {
-    if (!val) return [];
-
-    // Already a proper JS array
-    if (Array.isArray(val)) {
-      return val.filter((v: any) => typeof v === "string" && v.trim() !== "");
-    }
-
-    // Postgres returns text[] as string like: {url1,url2} or {"url1","url2"}
-    if (typeof val === "string") {
-      const inner = val.trim().replace(/^\{/, "").replace(/\}$/, "");
-      if (!inner) return [];
-      return inner
-        .split(",")
-        .map((s) => s.trim().replace(/^"/, "").replace(/"$/, ""))
-        .filter((s) => s !== "");
-    }
-
-    return [];
-  };
-
-  // Rating stars
-  const renderRating = (rating: any) => {
-    const num = parseFloat(rating) || 0;
-    const full = Math.floor(num);
-    const half = num % 1 >= 0.5;
-    const empty = 5 - full - (half ? 1 : 0);
-    return (
-      <div className="flex items-center gap-2">
-        <div className="flex text-yellow-400 text-xl">
-          {"★".repeat(full)}
-          {half ? "½" : ""}
-          <span className="text-gray-600">{"★".repeat(empty)}</span>
-        </div>
-        <span className="text-gray-400 text-sm">{num}/5</span>
-      </div>
-    );
-  };
-
   const screenshots = getArray(hack.screenshots);
   const features = getArray(hack.features);
+
+  console.log("PARSED screenshots:", screenshots); // DEBUG
 
   const SectionHeading = ({ children }: { children: React.ReactNode }) => (
     <div className="mt-10 mb-4">
@@ -102,10 +114,10 @@ export default function HackDetail() {
     <PageWrapper>
       <div className="p-4 max-w-5xl mx-auto text-white">
 
-        {/* ---- MAIN INFO ---- */}
+        {/* MAIN INFO */}
         <div className="grid md:grid-cols-2 gap-8">
           <img
-            src={hack.cover_image || "https://via.placeholder.com/500x300"}
+            src={hack.cover_image || "https://placehold.co/500x300"}
             alt={hack.title}
             className="w-full rounded-xl object-cover max-h-80 md:max-h-full"
           />
@@ -114,15 +126,21 @@ export default function HackDetail() {
             <h1 className="text-3xl font-bold">{hack.title}</h1>
             <p className="text-gray-400">by {hack.author || "Unknown"}</p>
 
-            <div className="flex gap-2 text-sm flex-wrap">
+            <div className="flex gap-2 flex-wrap text-sm">
               {hack.base_game && (
-                <span className="bg-red-500 px-2 py-1 rounded">{hack.base_game}</span>
+                <span className="bg-red-500 px-2 py-1 rounded">
+                  {hack.base_game}
+                </span>
               )}
               {hack.platform && (
-                <span className="bg-blue-500 px-2 py-1 rounded">{hack.platform}</span>
+                <span className="bg-blue-500 px-2 py-1 rounded">
+                  {hack.platform}
+                </span>
               )}
               {hack.status && (
-                <span className="bg-green-500 px-2 py-1 rounded">{hack.status}</span>
+                <span className="bg-green-500 px-2 py-1 rounded">
+                  {hack.status}
+                </span>
               )}
             </div>
 
@@ -133,50 +151,53 @@ export default function HackDetail() {
                 href={hack.download_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-center bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-semibold transition"
+                className="block text-center bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-semibold"
               >
                 Download ROM / Patch
               </a>
             ) : (
-              <div className="text-gray-400">🚧 Download link not available</div>
+              <div className="text-gray-400">🚧 No download link</div>
             )}
           </div>
         </div>
 
-        {/* ---- DESCRIPTION ---- */}
+        {/* DESCRIPTION */}
         <SectionHeading>📖 Description</SectionHeading>
-        <p className="text-gray-300 leading-relaxed">
+        <p className="text-gray-300">
           {hack.description || "No description available."}
         </p>
 
-        {/* ---- FEATURES ---- */}
+        {/* FEATURES */}
         {features.length > 0 && (
           <>
             <SectionHeading>✨ Features</SectionHeading>
             <ul className="space-y-2">
               {features.map((f, i) => (
-                <li key={i} className="flex items-start gap-2 text-gray-300">
-                  <span className="text-red-400 mt-1">▸</span>
-                  <span>{f}</span>
+                <li key={i} className="flex gap-2 text-gray-300">
+                  <span className="text-red-400">▸</span>
+                  {f}
                 </li>
               ))}
             </ul>
           </>
         )}
 
-        {/* ---- SCREENSHOTS ---- */}
+        {/* SCREENSHOTS */}
         <SectionHeading>🖼️ Screenshots</SectionHeading>
+
         {screenshots.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {screenshots.map((src, i) => (
               <img
                 key={i}
                 src={src}
-                alt={`Screenshot ${i + 1}`}
+                alt={`Screenshot ${i}`}
                 className="rounded-lg w-full object-cover aspect-video bg-gray-800"
+                loading="lazy"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/300x180?text=No+Image";
+                  const target = e.currentTarget;
+                  target.onerror = null; // 🔥 stops infinite loop
+                  target.src = "https://placehold.co/300x180?text=Image+Error";
                 }}
               />
             ))}
@@ -185,29 +206,20 @@ export default function HackDetail() {
           <p className="text-gray-500">No screenshots available.</p>
         )}
 
-        {/* ---- HOW TO PLAY ---- */}
+        {/* HOW TO PLAY */}
         <SectionHeading>🎮 How to Play</SectionHeading>
-        <ol className="list-decimal list-inside space-y-2 text-gray-300">
-          <li>Download the base ROM for the game</li>
-          <li>Download the patch / ROM file above</li>
-          <li>
-            Use our{" "}
-            <a href="/patcher" className="text-red-400 hover:underline">
-              Patcher tool
-            </a>{" "}
-            to apply the patch (if it's a .ips/.bps file)
-          </li>
-          <li>Open the patched ROM in your emulator</li>
-          <li>If it's a fan game (.exe), no emulator needed — run directly on PC</li>
-          <li>
-            On Android, use <span className="text-red-400">JoiPlay</span> for fan games
-          </li>
+        <ol className="list-decimal list-inside text-gray-300 space-y-2">
+          <li>Download base ROM</li>
+          <li>Download patch</li>
+          <li>Use patcher tool</li>
+          <li>Run in emulator</li>
         </ol>
 
-        {/* ---- RELATED HACKS ---- */}
+        {/* RELATED */}
         <SectionHeading>🕹️ Related Hacks</SectionHeading>
+
         {related.length === 0 ? (
-          <p className="text-gray-400">No related hacks found.</p>
+          <p className="text-gray-400">No related hacks</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {related.map((h) => (
