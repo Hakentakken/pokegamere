@@ -10,6 +10,9 @@ export default function HackDetail() {
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ NEW STATE (only addition)
+  const [downloading, setDownloading] = useState(false);
+
   useEffect(() => {
     fetchHack();
   }, [id]);
@@ -24,7 +27,7 @@ export default function HackDetail() {
 
       if (error) throw error;
 
-      console.log("RAW screenshots:", data.screenshots); // DEBUG
+      console.log("RAW screenshots:", data.screenshots);
 
       setHack(data);
 
@@ -42,19 +45,27 @@ export default function HackDetail() {
     }
   };
 
-  // 🔥 CLEAN + ROBUST ARRAY PARSER
+  // ✅ NEW DOWNLOAD HANDLER (safe)
+  const handleDownload = (link: string) => {
+    setDownloading(true);
+
+    setTimeout(() => {
+      window.open(link, "_blank");
+      setDownloading(false);
+    }, 1200);
+  };
+
+  // 🔥 ARRAY PARSER (UNCHANGED)
   const getArray = (val: any): string[] => {
     if (!val) return [];
 
     const clean = (url: string) =>
       url.trim().replace(/^"|"$/g, "");
 
-    // Proper JS array
     if (Array.isArray(val)) {
       return val.map(clean).filter((v) => v !== "");
     }
 
-    // Postgres string {url1,url2}
     if (typeof val === "string") {
       const inner = val.replace(/^\{|\}$/g, "");
       if (!inner) return [];
@@ -67,7 +78,7 @@ export default function HackDetail() {
     return [];
   };
 
-  // ⭐ Rating
+  // ⭐ Rating (UNCHANGED)
   const renderRating = (rating: any) => {
     const num = parseFloat(rating) || 0;
     const full = Math.floor(num);
@@ -101,7 +112,7 @@ export default function HackDetail() {
   const screenshots = getArray(hack.screenshots);
   const features = getArray(hack.features);
 
-  console.log("PARSED screenshots:", screenshots); // DEBUG
+  console.log("PARSED screenshots:", screenshots);
 
   const SectionHeading = ({ children }: { children: React.ReactNode }) => (
     <div className="mt-10 mb-4">
@@ -146,15 +157,14 @@ export default function HackDetail() {
 
             {renderRating(hack.rating)}
 
+            {/* 🔥 UPDATED DOWNLOAD BUTTON */}
             {hack.download_link ? (
-              <a
-                href={hack.download_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-center bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-semibold"
+              <button
+                onClick={() => handleDownload(hack.download_link)}
+                className="block w-full text-center bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-semibold"
               >
-                Download ROM / Patch
-              </a>
+                {downloading ? "Preparing Download..." : "Download ROM / Patch"}
+              </button>
             ) : (
               <div className="text-gray-400">🚧 No download link</div>
             )}
@@ -196,7 +206,7 @@ export default function HackDetail() {
                 loading="lazy"
                 onError={(e) => {
                   const target = e.currentTarget;
-                  target.onerror = null; // 🔥 stops infinite loop
+                  target.onerror = null;
                   target.src = "https://placehold.co/300x180?text=Image+Error";
                 }}
               />
