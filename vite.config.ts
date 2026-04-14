@@ -4,10 +4,20 @@ import sitemap from 'vite-plugin-sitemap'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),
-  sitemap({
-    hostname: 'https://pokesmith.com'
-  })
-]
-  
+  plugins: [
+    react(),
+    sitemap({
+      hostname: 'https://pokesmith.com',
+      dynamicRoutes: [
+        '/',
+        '/hacks',
+        '/cheats',
+        '/emulators',
+        '/patcher',
+        '/qa',
+        '/about',
+        '/privacy',
+      ]
+    })
+  ]
 })
