@@ -2,30 +2,726 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Smooth scroll */
+/* ============================================================
+   THEME TOKENS
+   Dark is the default and the signature look. `html.light`
+   re-points the same tokens for the daytime palette, so every
+   class already in the markup follows automatically.
+   Values are space-separated RGB so Tailwind's
+   `rgb(var(--token) / <alpha-value>)` keeps opacity modifiers.
+   ============================================================ */
+:root {
+  /* Text tone — one variable, inverted between themes */
+  --c-white: 255 255 255;
+
+  /* Cinematic ink surfaces */
+  --c-ink-950: 5 5 7; /* page */
+  --c-ink-900: 10 10 15;
+  --c-ink-850: 14 14 21; /* panels */
+  --c-ink-800: 19 19 28;
+  --c-ink-700: 28 28 40;
+
+  /* Text ramp (200 lightest → 600 dimmest in dark) */
+  --c-n-200: 245 245 245;
+  --c-n-300: 229 229 229;
+  --c-n-400: 163 163 163;
+  --c-n-500: 115 115 115;
+  --c-n-600: 82 82 91;
+
+  /* Accent text tones */
+  --c-brand-300: 252 165 165;
+  --c-brand-400: 248 113 113;
+  --c-sky-300: 125 211 252;
+  --c-sky-400: 56 189 248;
+  --c-gold-400: 251 191 36;
+  --c-emerald-300: 110 231 183;
+  --c-rose-300: 253 164 175;
+  --c-blue-400: 96 165 250;
+  --c-green-400: 74 222 128;
+  --c-yellow-500: 234 179 8;
+
+  /* Chrome bits that are easier as raw variables than as utilities */
+  --c-scroll-track: 10 10 15;
+  --c-vignette: 5 5 7;
+  --c-vignette-a: 0.9;
+  --c-atmo-alpha: 1;
+  --c-keyart-alpha: 1;
+  /* Highlights. On a dark page a hover glow is light; on a light page a white
+     glow is invisible, so the same layer takes a brand tint instead. */
+  --c-sheen: 255 255 255;
+  --c-sheen-a: 0.14;
+  --c-shimmer: 255 255 255;
+  --c-shimmer-a: 0.07;
+}
+
+html.light {
+  /* Text tone becomes ink, so `text-white` means "body text" in both themes */
+  --c-white: 24 27 40;
+
+  --c-ink-950: 248 250 252; /* page — slate 50 */
+  --c-ink-900: 255 255 255;
+  --c-ink-850: 255 255 255; /* panels read as white cards */
+  --c-ink-800: 241 245 249;
+  --c-ink-700: 226 232 240;
+
+  /* Text ramp inverted: 200 is now the strongest tone, 600 the quietest */
+  --c-n-200: 30 41 59;
+  --c-n-300: 51 65 85;
+  --c-n-400: 71 85 105;
+  --c-n-500: 90 105 130;
+  --c-n-600: 100 116 139;
+
+  /* Accents darken so they stay legible on a light page */
+  --c-brand-300: 185 28 28;
+  --c-brand-400: 220 38 38;
+  --c-sky-300: 7 89 133;
+  --c-sky-400: 14 116 144;
+  --c-gold-400: 180 83 9;
+  --c-emerald-300: 4 120 87;
+  --c-rose-300: 190 18 60;
+  --c-blue-400: 29 78 216;
+  --c-green-400: 21 128 61;
+  --c-yellow-500: 161 98 7;
+
+  --c-scroll-track: 226 232 240;
+  --c-vignette: 148 163 184;
+  --c-vignette-a: 0.22;
+  --c-atmo-alpha: 0.5;
+  --c-keyart-alpha: 0.55;
+  --c-sheen: 239 68 68;
+  --c-sheen-a: 0.07;
+  /* The shimmer stays white — over a light-grey skeleton it is the *alpha*
+     that has to rise for the sweep to read. */
+  --c-shimmer: 255 255 255;
+  --c-shimmer-a: 0.75;
+}
+
+/* ============================================================
+   MOTION SYSTEM — the single source of truth
+   Every duration / easing / stagger in the app comes from here or
+   from the CSS custom properties below, so nothing is ad-hoc.
+   Scale: micro (150-250ms) → component (300-700ms)
+          → section (600-1200ms) → cinematic (1000ms+)
+   ============================================================ */
+:root {
+  /* Easing */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* entrances — decelerate hard */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* loops, ambient drift */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1); /* exits — accelerate away */
+  --ease-emphasis: cubic-bezier(0.16, 1, 0.3, 1); /* hero, masked reveals */
+
+  /* Duration */
+  --dur-micro: 180ms;
+  --dur-component: 420ms;
+  --dur-section: 820ms;
+  --dur-cinematic: 1200ms;
+
+  /* Rhythm */
+  --stagger-tight: 60ms;
+  --stagger: 90ms;
+  --stagger-loose: 140ms;
+
+  /* Layout */
+  --shell: 72rem;
+  --gutter: 1.5rem;
+}
+
+/* Which way native UI (form controls, scrollbars, autofill) should be painted */
 html {
-  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+html.light {
+  color-scheme: light;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: #ef4444;
-  border-radius: 10px;
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-neutral-300 font-sans antialiased;
+    /* clip (not hidden) so the sticky navbar keeps working */
+    overflow-x: clip;
+    min-height: 100vh;
+  }
+
+  #root {
+    isolation: isolate;
+  }
+
+  /* Native controls follow the active theme (set from JS + the token below) */
+  input,
+  textarea,
+  select,
+  option {
+    color-scheme: inherit;
+  }
+
+  ::selection {
+    background: rgba(239, 68, 68, 0.35);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-brand-400));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Scrollbar — preserved red identity, refined */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--c-scroll-track));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ef4444, #b91c1c);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #f87171;
+  }
+  * {
+    scrollbar-color: #b91c1c rgb(var(--c-scroll-track));
+  }
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.input {
-  @apply w-full p-2 bg-gray-800 rounded outline-none;
+/* ------------------------------------------------------------
+   THEME SWITCH — colours cross-fade instead of snapping.
+   The class is added only while switching (see src/lib/theme.ts),
+   so a normal page load never animates the whole document.
+   ------------------------------------------------------------ */
+html.theme-anim,
+html.theme-anim body,
+html.theme-anim * {
+  transition:
+    background-color 0.34s var(--ease-out),
+    border-color 0.34s var(--ease-out),
+    color 0.34s var(--ease-out),
+    fill 0.34s var(--ease-out) !important;
 }
 
-.btn {
-  @apply bg-red-500 px-6 py-3 rounded-lg hover:bg-red-600;
+/* Atmospheric light is tuned down on light backgrounds so the same
+   composition reads as atmosphere rather than as a colour wash. */
+html.light .atmosphere {
+  opacity: var(--c-atmo-alpha);
+}
+/* Key art keeps its presence but stops fighting body text on a light page. */
+html.light .keyart {
+  opacity: var(--c-keyart-alpha);
+}
+
+/* ============================================================
+   COMPONENTS (existing class names preserved)
+   ============================================================ */
+@layer components {
+  .glass {
+    background: rgb(var(--c-ink-900) / 0.55);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgb(var(--c-white) / 0.08);
+  }
+
+  .panel {
+    @apply rounded-2xl border border-white/10 bg-ink-850/70 shadow-panel;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition;
+  }
+  .input:focus {
+    @apply border-brand/60 bg-white/[0.06] shadow-glow-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-6 py-3 text-sm font-semibold tracking-wide text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow active:translate-y-px;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/[0.03] px-6 py-3 text-sm font-semibold tracking-wide text-white transition duration-300 hover:border-white/60 hover:bg-white hover:text-ink-950 active:translate-y-px;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-neutral-300;
+  }
+
+  /* Mono HUD-style eyebrow label */
+  .eyebrow {
+    @apply inline-flex items-center gap-3 font-mono text-[11px] font-medium uppercase tracking-[0.28em] text-brand-400;
+  }
+
+  /* Soft atmospheric glow blob used behind heroes/sections */
+  .glow-spot {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* ----------------------------------------------------------
+     SHELL — one content width for every page section
+     ---------------------------------------------------------- */
+  .shell {
+    width: 100%;
+    max-width: var(--shell);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* ----------------------------------------------------------
+     SECTION — vertical rhythm shared by every narrative band
+     ---------------------------------------------------------- */
+  .band {
+    position: relative;
+    padding-block: clamp(4.5rem, 9vw, 8rem);
+  }
+  .band-tight {
+    padding-block: clamp(3rem, 6vw, 5rem);
+  }
+
+  /* Hairline that draws itself in from the left */
+  .hairline {
+    position: relative;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      rgba(239, 68, 68, 0.8),
+      rgb(var(--c-white) / 0.12) 45%,
+      transparent
+    );
+  }
+
+  /* ----------------------------------------------------------
+     TYPOGRAPHY — fluid, optically tracked, never absurdly huge
+     ---------------------------------------------------------- */
+  .type-hero {
+    font-size: clamp(3.25rem, 11.5vw, 8.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.035em;
+  }
+  .type-display {
+    font-size: clamp(2.1rem, 5.2vw, 3.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+  }
+  .type-overline {
+    font-family: theme("fontFamily.mono");
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  .type-lede {
+    font-size: clamp(1rem, 1.35vw, 1.1875rem);
+    line-height: 1.65;
+    color: rgb(var(--c-n-400));
+    text-wrap: pretty;
+  }
+
+  /* ----------------------------------------------------------
+     BUTTONS — micro motion: sheen sweep on hover, press on tap
+     (additive to the existing .btn / .btn-ghost definitions)
+     ---------------------------------------------------------- */
+  .btn::after,
+  .btn-ghost::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.32) 50%,
+      transparent 80%
+    );
+    transform: translateX(-120%);
+    pointer-events: none;
+  }
+  .btn:hover::after,
+  .btn-ghost:hover::after {
+    animation: sheen 0.9s var(--ease-out);
+  }
+
+  /* Big editorial CTA — hero + closing band */
+  .btn-hero {
+    @apply relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full px-7 py-3.5 font-display text-[15px] font-semibold text-oncolor;
+    background: linear-gradient(120deg, #b91c1c, #ef4444 45%, #f87171);
+    box-shadow:
+      0 18px 40px -18px rgba(239, 68, 68, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transition:
+      transform var(--dur-component) var(--ease-out),
+      box-shadow var(--dur-component) var(--ease-out);
+  }
+  .btn-hero:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 26px 54px -20px rgba(239, 68, 68, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  .btn-hero:active {
+    transform: translateY(0);
+  }
+  .btn-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.38) 50%, transparent 80%);
+    transform: translateX(-120%);
+  }
+  .btn-hero:hover::after {
+    animation: sheen 1s var(--ease-out);
+  }
+
+  /* Secondary ghost CTA with the same rhythm */
+  .btn-hero-ghost {
+    @apply relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-full border border-white/15 bg-white/[0.04] px-7 py-3.5 font-display text-[15px] font-semibold text-white backdrop-blur-sm;
+    transition:
+      transform var(--dur-component) var(--ease-out),
+      background-color var(--dur-component) var(--ease-out),
+      border-color var(--dur-component) var(--ease-out);
+  }
+  .btn-hero-ghost:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--c-white) / 0.4);
+    background: rgb(var(--c-white) / 0.08);
+  }
+  .btn-hero-ghost::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgb(var(--c-white) / 0.18) 50%, transparent 80%);
+    transform: translateX(-120%);
+  }
+  .btn-hero-ghost:hover::after {
+    animation: sheen 1s var(--ease-out);
+  }
+
+  /* ----------------------------------------------------------
+     MEDIA / SURFACES
+     ---------------------------------------------------------- */
+  /* Pointer-tracked light layer (position set inline, GPU only) */
+  .light-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-section) var(--ease-out);
+    background: radial-gradient(
+      22rem circle at var(--mx, 50%) var(--my, 50%),
+      rgb(var(--c-white) / var(--c-sheen-a)),
+      transparent 62%
+    );
+  }
+  .group:hover .light-layer {
+    opacity: 1;
+  }
+
+  /* Edge-lit frame that catches light on hover */
+  .edge-lit {
+    position: relative;
+  }
+  .edge-lit::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      140deg,
+      rgba(248, 113, 113, 0.85),
+      rgb(var(--c-white) / 0.06) 45%,
+      transparent 70%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--dur-component) var(--ease-out);
+  }
+  .group:hover .edge-lit::before,
+  .edge-lit:hover::before {
+    opacity: 1;
+  }
+
+  /* Skeleton placeholder */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgb(var(--c-white) / 0.05);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(var(--c-shimmer) / var(--c-shimmer-a)), transparent);
+    animation: shimmer 1.6s var(--ease-in-out) infinite;
+  }
+
+  /* Expanding link underline */
+  .link-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .link-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    height: 1px;
+    width: 100%;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--dur-component) var(--ease-out);
+  }
+  .link-underline:hover::after,
+  .link-underline:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  /* Index numeral for process / feature rails */
+  .index-num {
+    font-family: theme("fontFamily.mono");
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+    color: rgb(var(--c-brand-400));
+  }
+}
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+@layer utilities {
+  /* Film grain overlay — add to a `relative` container */
+  .grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 30;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Image/text masks for cinematic framing */
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  }
+  .mask-fade-r {
+    -webkit-mask-image: linear-gradient(to right, #000 45%, transparent 100%);
+    mask-image: linear-gradient(to right, #000 45%, transparent 100%);
+  }
+  .mask-radial {
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, #000 40%, transparent 75%);
+  }
+  /* Soft fades on both edges — horizontal rails and tickers */
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar for horizontal strips (marquee) */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* ----------------------------------------------------------
+     AMBIENT MOTION — continuous, GPU-only (transform/opacity)
+     ---------------------------------------------------------- */
+  .animate-drift-a {
+    animation: drift-a 30s var(--ease-in-out) infinite alternate;
+  }
+  .animate-drift-b {
+    animation: drift-b 40s var(--ease-in-out) infinite alternate;
+  }
+  .animate-drift-c {
+    animation: drift-c 52s var(--ease-in-out) infinite alternate;
+  }
+  .animate-float-slow {
+    animation: float-slow 9s var(--ease-in-out) infinite alternate;
+  }
+  .animate-scan {
+    animation: scan 9s linear infinite;
+  }
+  .animate-breathe {
+    animation: breathe 7s var(--ease-in-out) infinite alternate;
+  }
+  .animate-marquee-slow {
+    animation: marquee 64s linear infinite;
+  }
+  .animate-sweep-x {
+    animation: sweep-x 26s var(--ease-in-out) infinite;
+  }
+
+  /* Horizontal rail: native momentum + snap, keyboard accessible */
+  .rail {
+    display: flex;
+    overflow-x: auto;
+    /*
+      `proximity`, not `mandatory`: with mandatory, a snap target that the
+      container cannot physically reach (the last card of a short rail) pins the
+      scroll back to the start, which makes the arrows look dead. Proximity still
+      settles onto a card, but never fights the scroll range.
+    */
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-padding-left: 0;
+  }
+  .rail > * {
+    scroll-snap-align: start;
+    flex: none;
+  }
+}
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+@keyframes drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6%, -4%, 0) scale(1.14);
+  }
+}
+@keyframes drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  to {
+    transform: translate3d(-5%, 5%, 0) scale(1);
+  }
+}
+@keyframes drift-c {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(4%, 6%, 0) rotate(6deg);
+  }
+}
+@keyframes float-slow {
+  from {
+    transform: translate3d(0, -8px, 0);
+  }
+  to {
+    transform: translate3d(0, 10px, 0);
+  }
+}
+@keyframes scan {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 72px, 0);
+  }
+}
+@keyframes breathe {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes sheen {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes draw-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes sweep-x {
+  from {
+    transform: translate3d(-10%, 0, 0);
+  }
+  to {
+    transform: translate3d(560%, 0, 0);
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION — users who opt out get a fully static site
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-marquee,
+  .animate-marquee-slow {
+    animation: none !important;
+  }
+  /* Ambient loops would otherwise keep the compositor busy forever */
+  .animate-drift-a,
+  .animate-drift-b,
+  .animate-drift-c,
+  .animate-float-slow,
+  .animate-scan,
+  .animate-sweep-x,
+  .animate-breathe {
+    animation: none !important;
+  }
+  .skeleton::after {
+    animation: none !important;
+    transform: none !important;
+  }
+  /* Sheen / hairline draw are decorative one-shots */
+  .btn::after,
+  .btn-ghost::after,
+  .btn-hero::after,
+  .btn-hero-ghost::after {
+    animation: none !important;
+    transform: none !important;
+  }
 }

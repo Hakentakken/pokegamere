@@ -1,20 +1,31 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { motion, useScroll } from "framer-motion";
+import DesktopNav from "./DesktopNav";
+import MobileMenu from "./MobileMenu";
+import { PRIMARY, SECONDARY, type SessionUser } from "./navLinks";
 import { supabase } from "../lib/supabase";
+import { DUR, EASE } from "../lib/motion";
+import { useTheme } from "../lib/theme";
 
+/**
+ * Site header.
+ *
+ * Arrives from above, then transforms with the page: it tightens, gains a
+ * solid blurred background and shows a reading-progress hairline once you
+ * start scrolling. The active page is marked by a pill that slides between
+ * items (see DesktopNav).
+ *
+ * The theme lives in `useTheme`, so the header switch, the mobile drawer and
+ * the persisted preference are always the same value.
+ */
 export default function Navbar() {
-  const [dark, setDark] = useState(true);
+  const { theme, toggle } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<SessionUser>(null);
+  const [scrolled, setScrolled] = useState(false);
 
-  // 🌙 Dark mode
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+  const { scrollYProgress } = useScroll();
 
   // 🔐 Auth
   useEffect(() => {
@@ -25,117 +36,95 @@ export default function Navbar() {
     checkUser();
   }, []);
 
+  // 📜 Scroll state → the bar compacts and firms up once the page moves
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // ⛔ Drawer: Escape closes it, body scroll locks while open
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   return (
     <>
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-black/40 border-b border-white/10">
-        <div className="max-w-6xl mx-auto flex justify-between items-center p-4">
-
+      <motion.nav
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: DUR.section, ease: EASE.out, delay: 0.05 }}
+        className={`sticky top-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-500 ease-cinematic ${
+          scrolled
+            ? "border-white/10 bg-ink-950/90 shadow-panel backdrop-blur-xl"
+            : "border-transparent bg-ink-950/60 backdrop-blur-md"
+        }`}
+      >
+        <div
+          className={`shell flex items-center justify-between transition-[padding] duration-500 ease-cinematic ${
+            scrolled ? "py-2" : "py-3"
+          }`}
+        >
           {/* LOGO */}
           <Link
-  to="/"
-  className="text-2xl font-extrabold text-red-500 tracking-wide transition-all duration-300 hover:text-red-400 hover:scale-105"
->
-  Poké<span className="text-white">Smith</span>
-</Link>
+            to="/"
+            className="group flex items-center gap-2.5 transition-transform duration-300 hover:scale-[1.02]"
+            aria-label="PokéSmith home"
+          >
+            <span className="relative h-9 w-9 overflow-hidden rounded-full border border-white/15 shadow-glow-sm">
+              <img
+                src="/logo.jpeg"
+                alt=""
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            </span>
+            <span className="font-display text-xl font-bold tracking-tight text-brand-500">
+              Poké<span className="text-white">Smith</span>
+            </span>
+          </Link>
 
-          {/* DESKTOP */}
-          <div className="hidden md:flex gap-6 text-sm text-gray-300 items-center">
-            <Link to="/" className="hover:text-red-500">Home</Link>
-            <Link to="/hacks" className="hover:text-red-500">Hacks</Link>
-            <Link to="/cheats" className="hover:text-red-500">Cheats</Link>
-            <Link to="/emulators" className="hover:text-red-500">Emulators</Link>
-            <Link to="/patcher" className="hover:text-red-500">Patcher</Link>
-            <Link to="/qa" className="hover:text-red-500">Q&A</Link>
-            <Link to="/about" className="hover:text-red-500">About</Link>
-            <Link to="/privacy" className="hover:text-red-500">Privacy</Link>
-
-            {user ? (
-              <Link to="/admin" className="text-green-400">Admin</Link>
-            ) : (
-              <Link to="/login" className="text-blue-400">Login</Link>
-            )}
-
-            <button
-              onClick={() => setDark(!dark)}
-              className="bg-white/10 px-3 py-1 rounded-lg hover:bg-white/20"
-            >
-              {dark ? "☀️" : "🌙"}
-            </button>
-          </div>
+          <DesktopNav user={user} theme={theme} onToggleTheme={toggle} />
 
           {/* MOBILE BUTTON */}
           <button
             onClick={() => setMenuOpen(true)}
-            className="md:hidden text-3xl text-white"
+            className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 transition hover:bg-white/10 md:hidden"
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
           >
-            ☰
+            <span className="h-px w-5 bg-white" />
+            <span className="h-px w-5 bg-white" />
+            <span className="h-px w-3.5 self-center bg-brand-400" />
           </button>
         </div>
-      </nav>
 
-      {/* 🔥 OVERLAY */}
-      {menuOpen && (
-        <div
-          onClick={() => setMenuOpen(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+        {/* Reading progress */}
+        <motion.div
+          aria-hidden="true"
+          style={{ scaleX: scrollYProgress }}
+          className="h-px origin-left bg-gradient-to-r from-brand-600 via-brand-400 to-brand-300"
         />
-      )}
+      </motion.nav>
 
-      {/* 🚀 SLIDE DRAWER */}
-      <div
-        className={`fixed top-0 right-0 h-full w-72 bg-black border-l border-white/10 z-50 transform transition-transform duration-300 ${
-          menuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        {/* HEADER */}
-        <div className="flex justify-between items-center p-4 border-b border-white/10">
-          <h2 className="text-lg font-bold text-red-500">Menu</h2>
-
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="text-xl"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* LINKS */}
-        <div className="flex flex-col p-4 gap-4 text-gray-300">
-
-          <Link to="/" onClick={()=>setMenuOpen(false)}>Home</Link>
-          <Link to="/hacks" onClick={()=>setMenuOpen(false)}>Hacks</Link>
-          <Link to="/cheats" onClick={()=>setMenuOpen(false)}>Cheats</Link>
-          <Link to="/emulators" onClick={()=>setMenuOpen(false)}>Emulators</Link>
-          <Link to="/patcher" onClick={()=>setMenuOpen(false)}>Patcher</Link>
-          <Link to="/qa" onClick={()=>setMenuOpen(false)}>Q&A</Link>
-
-          <hr className="border-white/10"/>
-
-          <Link to="/about" onClick={()=>setMenuOpen(false)}>About</Link>
-          <Link to="/privacy" onClick={()=>setMenuOpen(false)}>Privacy</Link>
-
-          <hr className="border-white/10"/>
-
-          {user ? (
-            <Link to="/admin" onClick={()=>setMenuOpen(false)} className="text-green-400">
-              Admin Panel
-            </Link>
-          ) : (
-            <Link to="/login" onClick={()=>setMenuOpen(false)} className="text-blue-400">
-              Login
-            </Link>
-          )}
-
-          {/* THEME */}
-          <button
-            onClick={() => setDark(!dark)}
-            className="bg-white/10 px-3 py-2 rounded-lg mt-4"
-          >
-            Toggle Theme
-          </button>
-        </div>
-      </div>
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        user={user}
+        theme={theme}
+        onToggleTheme={toggle}
+        primary={PRIMARY}
+        secondary={SECONDARY}
+      />
     </>
   );
 }

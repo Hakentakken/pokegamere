@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check:db": "node connection-check.mjs",
+    "check:images": "node verify-images.mjs",
+    "check:ui": "node smoke-render.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

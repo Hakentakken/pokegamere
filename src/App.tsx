@@ -3,9 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import BackToTop from "./components/BackToTop";
+import ScrollToTop from "./components/ScrollToTop";
 import Login from "./pages/Login";
 import About from "./pages/About";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import Hacks from "./pages/Hacks";
@@ -20,16 +22,17 @@ import Admin from "./pages/Admin";
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-black text-white">
-        
+      <div className="flex min-h-screen flex-col bg-ink-950 text-neutral-200">
+        <ScrollToTop />
         <Navbar />
 
-        <main className="flex-1 p-4">
+        <main className="relative min-w-0 flex-1">
           <Routes>
-          <Route path="/about" element={<About />} />
-<Route path="/privacy" element={<Privacy />} />
-<Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/" element={<Home />} />
             <Route path="/hacks" element={<Hacks />} />
             <Route path="/hack/:id" element={<HackDetail />} />

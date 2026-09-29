@@ -1,10 +1,47 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.jpeg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PokeSmith</title>
+    <meta name="theme-color" content="#050507" />
+    <meta
+      name="description"
+      content="PokéSmith — discover fan-made Pokémon ROM hacks, cheats and emulators, patch games and start playing."
+    />
+    <title>PokéSmith — Pokémon ROM Hacks, Cheats &amp; Emulators</title>
+
+    <!--
+      Theme, applied before the first paint.
+
+      Colours live on `:root` (dark) and `html.light` (day), so without this the
+      browser would paint the dark palette for one frame on a refresh even when
+      day mode is stored. Runs synchronously, touches only <html>, and fails soft
+      if storage is blocked.
+    -->
+    <script>
+      (function () {
+        try {
+          var light = localStorage.getItem("pokesmith-theme") === "light";
+          var root = document.documentElement;
+          root.classList.toggle("light", light);
+          root.classList.toggle("dark", !light);
+          root.style.colorScheme = light ? "light" : "dark";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", light ? "#f8fafc" : "#050507");
+        } catch (e) {
+          /* storage blocked — dark is already the default */
+        }
+      })();
+    </script>
+
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-9KKT5DYWCR"></script>

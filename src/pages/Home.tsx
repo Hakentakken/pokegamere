@@ -1,28 +1,42 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import HackCard from "../components/HackCard";
 import PageWrapper from "../components/PageWrapper";
-import { useNavigate } from "react-router-dom";
+import Marquee from "../components/Marquee";
+import CtaBand from "../components/CtaBand";
+import Hero from "../components/home/Hero";
+import FeaturedBand from "../components/home/FeaturedBand";
+import CategoryBand, { type Category } from "../components/home/CategoryBand";
+import ProcessBand from "../components/home/ProcessBand";
+import StudioBand from "../components/home/StudioBand";
+import { supabase } from "../lib/supabase";
+import { normalizeImageUrl } from "../lib/imageUrl";
+import type { HackRecord } from "../components/FeaturedHack";
 
-type Hack = {
-  id: string;
-  title: string;
-  author: string;
-  rating: number;
-  baseGame: string;
-  platform: string;
-  status: string;
-  coverImage: string;
-  description: string;
-};
+type Stats = { hacks: number; cheats: number; emulators: number } | null;
 
+const TICKER = [
+  "ROM Hacks",
+  "Cheats",
+  "Emulators",
+  "ROM Patcher",
+  "Q&A",
+  "GBA · NDS · Classic",
+  "Fan-made adventures",
+  "Fresh drops",
+];
+
+/**
+ * Home — the full arc: arrival → discovery → categories → how it works →
+ * studio → call to action.
+ *
+ * The existing `hacks` query is unchanged. Two extra read-only queries add the
+ * category breakdown and the live counts; both are optional, and the page
+ * simply omits those bands if they fail.
+ */
 export default function Home() {
-  const [latestHacks, setLatestHacks] = useState<Hack[]>([]);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchLatest();
-  }, []);
+  const [latestHacks, setLatestHacks] = useState<HackRecord[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [stats, setStats] = useState<Stats>(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchLatest = async () => {
     const { data, error } = await supabase
@@ -33,10 +47,11 @@ export default function Home() {
 
     if (error) {
       console.error(error);
+      setLoading(false);
       return;
     }
 
-    const formatted: Hack[] = (data || []).map((hack: any) => ({
+    const formatted: HackRecord[] = (data || []).map((hack: any) => ({
       id: String(hack.id),
       title: hack.title,
       author: hack.author,
@@ -49,136 +64,83 @@ export default function Home() {
     }));
 
     setLatestHacks(formatted);
+    setLoading(false);
+
+    // Optional enrichment — never blocks or breaks the page above.
+    void loadCategories();
+    void loadStats();
   };
+
+  useEffect(() => {
+    void fetchLatest();
+  }, []);
+
+  /** Base games that actually exist in the catalogue, with counts. */
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase.from("hacks").select("base_game").limit(200);
+      if (error || !data) return;
+
+      const counts = new Map<string, number>();
+      for (const row of data as any[]) {
+        const name = (row.base_game || "").trim();
+        if (!name) continue;
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+
+      setCategories(
+        [...counts.entries()]
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+          .slice(0, 6)
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /** Row counts for the hero's stat strip. */
+  const loadStats = async () => {
+    try {
+      const [hacks, cheats, emulators] = await Promise.all([
+        supabase.from("hacks").select("id", { count: "exact", head: true }),
+        supabase.from("cheats").select("id", { count: "exact", head: true }),
+        supabase.from("emulators").select("id", { count: "exact", head: true }),
+      ]);
+      setStats({
+        hacks: hacks.count ?? 0,
+        cheats: cheats.count ?? 0,
+        emulators: emulators.count ?? 0,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const covers = latestHacks
+    .map((hack) => normalizeImageUrl(hack.coverImage))
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-black text-white">
+      <div className="bg-ink-950 text-white">
+        <Hero covers={covers} stats={stats} />
 
-        {/* 🔥 HERO */}
-        <div className="text-center py-20 px-4 bg-gradient-to-b from-black via-gray-900 to-black">
-          
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-red-500">
-            PokéSmith
-          </h1>
-
-          <p className="text-gray-300 text-lg mb-4">
-            Discover Amazing Pokémon ROM Hacks
-          </p>
-
-          <p className="text-gray-400 max-w-2xl mx-auto mb-6">
-            Explore fan-made Pokémon adventures, download patches, cheats, and emulators — all in one place.
-          </p>
-
-          <div className="flex justify-center gap-4 flex-wrap">
-            <button
-              onClick={() => navigate("/hacks")}
-              className="bg-red-500 px-6 py-3 rounded-lg hover:bg-red-600 transition"
-            >
-              Browse ROM Hacks
-            </button>
-
-            <button
-              onClick={() => navigate("/patcher")}
-              className="border border-white/20 px-6 py-3 rounded-lg hover:bg-white hover:text-black transition"
-            >
-              ROM Patcher
-            </button>
-          </div>
+        {/* ⚡ ENERGY TICKER */}
+        <div className="border-y border-white/10 bg-ink-900/60 py-3">
+          <Marquee items={TICKER} label="PokéSmith — ROM hacks, cheats, emulators and patching" />
         </div>
 
-        {/* 🎥 YOUTUBE PROMO */}
-        <div className="py-12 border-t border-white/10 border-b border-white/10">
+        <FeaturedBand hacks={latestHacks} loading={loading} />
+        <CategoryBand categories={categories} loading={loading} />
+        <ProcessBand />
+        <StudioBand />
 
-  <h2 className="text-2xl font-bold text-center text-red-500 mb-8">
-    Our YouTube Channel
-  </h2>
-
-  <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 items-center">
-
-    {/* 🎥 VIDEO */}
-    <div className="w-full aspect-video">
-      <iframe
-        className="w-full h-full rounded-xl"
-        src="https://www.youtube.com/embed/rECqu6ywMnY"
-        title="YouTube video"
-        allowFullScreen
-      ></iframe>
-    </div>
-
-    {/* 📺 CHANNEL INFO */}
-    <div className="glass p-6 rounded-2xl space-y-4 text-center md:text-left">
-
-      <h3 className="text-xl font-bold">
-        @InvincibleGreninjaIsHere
-      </h3>
-
-      <p className="text-gray-400">
-        Watch gameplay, ROM hacks, tutorials, and more Pokémon content.
-      </p>
-
-      <a
-        href="https://www.youtube.com/@InvincibleGreninjaIsHere"
-        target="_blank"
-        className="inline-block bg-red-500 px-6 py-3 rounded-lg hover:bg-red-600 transition"
-      >
-        Visit Channel
-      </a>
-
-    </div>
-
-  </div>
-</div>
-       
-
-        {/* 🚀 LATEST HACKS */}
-        <div className="max-w-6xl mx-auto px-4 py-12">
-
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-red-500">
-              Latest Hacks
-            </h2>
-
-            <button
-              onClick={() => navigate("/hacks")}
-              className="text-sm text-gray-400 hover:text-white"
-            >
-              View All →
-            </button>
-          </div>
-
-          {/* EMPTY STATE */}
-          {latestHacks.length === 0 ? (
-            <div className="text-center text-gray-400 mt-10">
-              🚧 No hacks uploaded yet
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {latestHacks.map((hack) => (
-                <HackCard key={hack.id} {...hack} />
-              ))}
-            </div>
-          )}
-
-        </div>
-
-        {/* 🔻 FOOTER (ADS READY) */}
-        <div className="border-t border-white/10 py-6 text-center text-sm text-gray-400">
-          <p>© {new Date().getFullYear()} PokéSmith</p>
-
-          <div className="flex justify-center gap-4 mt-2 flex-wrap">
-            <button onClick={() => navigate("/about")} className="hover:text-white">
-              About
-            </button>
-            <button onClick={() => navigate("/privacy")} className="hover:text-white">
-              Privacy
-            </button>
-            <button onClick={() => navigate("/contact")} className="hover:text-white">
-              Contact
-            </button>
-          </div>
-        </div>
-
+        <CtaBand
+          primary={{ label: "Browse ROM Hacks", to: "/hacks" }}
+          secondary={{ label: "Read the Q&A", to: "/qa" }}
+        />
       </div>
     </PageWrapper>
   );

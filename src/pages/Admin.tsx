@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import PageWrapper from "../components/PageWrapper";
+import Loader from "../components/Loader";
+import Screenshot from "../components/Screenshot";
+import { parseTextList, serializeImageList, splitImageUrlInput } from "../lib/imageList";
+import { DRIVE_PUBLIC_HINT, isRenderableImageRef } from "../lib/imageUrl";
+import { SPRING } from "../lib/motion";
 
 export default function Admin() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +25,7 @@ export default function Admin() {
   const [rating, setRating] = useState(0);
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverUrl, setCoverUrl] = useState("");
   const [downloadLink, setDownloadLink] = useState("");
   const [screenshots, setScreenshots] = useState<string[]>([""]);
   const [features, setFeatures] = useState<string[]>([""]);
@@ -33,6 +40,8 @@ export default function Admin() {
   const [editRating, setEditRating] = useState(0);
   const [editDescription, setEditDescription] = useState("");
   const [editDownloadLink, setEditDownloadLink] = useState("");
+  const [editCoverUrl, setEditCoverUrl] = useState("");
+  const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
   const [editScreenshots, setEditScreenshots] = useState<string[]>([""]);
   const [editFeatures, setEditFeatures] = useState<string[]>([""]);
 
@@ -47,6 +56,8 @@ export default function Admin() {
   const [emuPlatform, setEmuPlatform] = useState("");
   const [emuDesc, setEmuDesc] = useState("");
   const [emuLink, setEmuLink] = useState("");
+  // 🔎 does `emulators.download_link` exist in the DB? (probed on mount)
+  const [hasEmuLinkCol, setHasEmuLinkCol] = useState(true);
 
   // 🔐 AUTH
   useEffect(() => {
@@ -55,6 +66,9 @@ export default function Admin() {
       if (!data.user) {
         window.location.href = "/login";
       } else {
+        // probe optional column so a missing column never breaks the insert
+        const { error } = await supabase.from("emulators").select("download_link").limit(1);
+        setHasEmuLinkCol(!error);
         fetchAll();
         setLoading(false);
       }
@@ -82,27 +96,34 @@ export default function Admin() {
     fetchAll();
   };
 
-  // 🔧 PARSE POSTGRES ARRAY — handles {url1,url2} string OR real JS array
-  const parsePostgresArray = (val: any): string[] => {
-    if (!val) return [""];
-    // Real JS array from Supabase
-    if (Array.isArray(val)) {
-      const filtered = val.filter((v: any) => typeof v === "string" && v.trim() !== "");
-      return filtered.length > 0 ? filtered : [""];
-    }
-    // Postgres text[] returned as string like: {url1,url2} or {"url1","url2"}
-    if (typeof val === "string") {
-      const inner = val.trim().replace(/^\{/, "").replace(/\}$/, "");
-      if (!inner) return [""];
-      return inner
-        .split(",")
-        .map((s) => s.trim().replace(/^"/, "").replace(/"$/, ""))
-        .filter((s) => s !== "");
-    }
-    return [""];
+  // 🔧 PARSE LIST COLUMNS — shared codec (src/lib/imageList.ts) understands real
+  // JS arrays, JSON text, the legacy double-encoded values and `{url1,url2}`
+  // literals, so existing records keep working with no database migration.
+  const parseList = (val: unknown): string[] => {
+    const parsed = parseTextList(val);
+    return parsed.length > 0 ? parsed : [""];
   };
 
-  // ✏️ OPEN EDIT — now correctly parses Postgres array format
+  // 🔧 SCREENSHOT SAVE PREP — stores a canonical JSON array and reports anything
+  // that is not a usable image link, instead of silently saving junk that would
+  // render as a broken tile on the public page.
+  const prepareScreenshots = (list: string[], label: string): string => {
+    const { valid, invalid } = splitImageUrlInput(list);
+    if (invalid.length > 0) {
+      alert(
+        `${label}: skipped ${invalid.length} entr${invalid.length === 1 ? "y" : "ies"} that is not a valid image URL:\n\n` +
+          invalid.slice(0, 3).join("\n")
+      );
+    }
+    return serializeImageList(valid);
+  };
+
+  const removeAt = (list: string[], setList: (next: string[]) => void, index: number) => {
+    const next = list.filter((_, i) => i !== index);
+    setList(next.length > 0 ? next : [""]);
+  };
+
+  // ✏️ OPEN EDIT — parses every stored list encoding + loads the current cover
   const openEdit = (hack: any) => {
     setEditingHack(hack);
     setEditTitle(hack.title || "");
@@ -113,36 +134,73 @@ export default function Admin() {
     setEditRating(hack.rating || 0);
     setEditDescription(hack.description || "");
     setEditDownloadLink(hack.download_link || "");
-    setEditScreenshots(parsePostgresArray(hack.screenshots));
-    setEditFeatures(parsePostgresArray(hack.features));
+    setEditCoverUrl(hack.cover_image || "");
+    setEditCoverFile(null);
+    setEditScreenshots(parseList(hack.screenshots));
+    setEditFeatures(parseList(hack.features));
   };
 
   // 💾 SAVE EDIT
   const saveEdit = async () => {
     if (!editingHack) return;
-    const { error } = await supabase
-      .from("hacks")
-      .update({
-        title: editTitle,
-        author: editAuthor,
-        base_game: editBaseGame,
-        platform: editPlatform,
-        status: editStatus,
-        rating: editRating,
-        description: editDescription,
-        download_link: editDownloadLink,
-        screenshots: editScreenshots.filter((s) => s.trim() !== ""),
-        features: editFeatures.filter((f) => f.trim() !== ""),
-      })
-      .eq("id", editingHack.id);
 
-    if (error) {
-      alert("Update failed ❌");
-      console.error(error);
-    } else {
+    const typedCover = editCoverUrl.trim();
+    if (!editCoverFile && typedCover !== "" && !isRenderableImageRef(typedCover)) {
+      alert("Cover image URL must start with https:// (or choose a file instead)");
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      title: editTitle,
+      author: editAuthor,
+      base_game: editBaseGame,
+      platform: editPlatform,
+      status: editStatus,
+      rating: editRating,
+      description: editDescription,
+      download_link: editDownloadLink,
+      screenshots: prepareScreenshots(editScreenshots, "Screenshots"),
+      features: editFeatures.filter((f) => f.trim() !== ""),
+    };
+
+    try {
+      // A newly picked file replaces the cover; an untouched field leaves the
+      // stored cover image exactly as it is.
+      if (editCoverFile) {
+        const coverPath = `covers/${Date.now()}-${editCoverFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("hacks")
+          .upload(coverPath, editCoverFile);
+        if (uploadError) {
+          alert("Cover upload failed ❌");
+          console.error(uploadError);
+          return;
+        }
+        payload.cover_image = supabase.storage
+          .from("hacks")
+          .getPublicUrl(coverPath).data.publicUrl;
+      } else if (typedCover !== (editingHack.cover_image || "")) {
+        payload.cover_image = typedCover;
+      }
+
+      const { error } = await supabase
+        .from("hacks")
+        .update(payload)
+        .eq("id", editingHack.id);
+
+      if (error) {
+        alert("Update failed ❌");
+        console.error(error);
+        return;
+      }
+
       alert("Hack updated ✅");
       setEditingHack(null);
+      setEditCoverFile(null);
       fetchAll();
+    } catch (err) {
+      console.error(err);
+      alert("Update failed ❌");
     }
   };
 
@@ -174,16 +232,38 @@ export default function Admin() {
 
   // 🚀 UPLOAD HACK
   const uploadHack = async () => {
-    if (!coverFile || !downloadLink) {
-      alert("Upload cover + add download link");
+    const typedCover = coverUrl.trim();
+
+    if (!coverFile && !typedCover) {
+      alert("Add a cover image (upload a file or paste an image URL)");
       return;
     }
+    if (!coverFile && !isRenderableImageRef(typedCover)) {
+      alert("Cover image URL must start with https:// (or choose a file instead)");
+      return;
+    }
+    if (!downloadLink) {
+      alert("Add a download link");
+      return;
+    }
+
     try {
-      const coverPath = `covers/${Date.now()}-${coverFile.name}`;
-      await supabase.storage.from("hacks").upload(coverPath, coverFile);
-      const coverUrl = supabase.storage
-        .from("hacks")
-        .getPublicUrl(coverPath).data.publicUrl;
+      // An uploaded file wins; otherwise the pasted URL is stored as-is.
+      let resolvedCover = typedCover;
+      if (coverFile) {
+        const coverPath = `covers/${Date.now()}-${coverFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("hacks")
+          .upload(coverPath, coverFile);
+        if (uploadError) {
+          alert("Cover upload failed ❌");
+          console.error(uploadError);
+          return;
+        }
+        resolvedCover = supabase.storage
+          .from("hacks")
+          .getPublicUrl(coverPath).data.publicUrl;
+      }
 
       const { error } = await supabase.from("hacks").insert({
         title,
@@ -193,9 +273,9 @@ export default function Admin() {
         status,
         rating,
         description,
-        cover_image: coverUrl,
+        cover_image: resolvedCover,
         download_link: downloadLink,
-        screenshots: screenshots.filter((s) => s.trim() !== ""),
+        screenshots: prepareScreenshots(screenshots, "Screenshots"),
         features: features.filter((f) => f.trim() !== ""),
       });
 
@@ -208,7 +288,7 @@ export default function Admin() {
       alert("Hack uploaded 🚀");
       setTitle(""); setAuthor(""); setBaseGame(""); setPlatform("");
       setStatus(""); setRating(0); setDescription(""); setCoverFile(null);
-      setDownloadLink(""); setScreenshots([""]); setFeatures([""]);
+      setCoverUrl(""); setDownloadLink(""); setScreenshots([""]); setFeatures([""]);
       fetchAll();
     } catch (err) {
       console.error(err);
@@ -232,12 +312,13 @@ export default function Admin() {
 
   // 🎮 ADD EMULATOR
   const addEmu = async () => {
-    const { error } = await supabase.from("emulators").insert({
+    const payload: Record<string, unknown> = {
       name: emuName,
       platform: emuPlatform,
       description: emuDesc,
-      download_link: emuLink,
-    });
+    };
+    if (hasEmuLinkCol) payload.download_link = emuLink;
+    const { error } = await supabase.from("emulators").insert(payload);
     if (error) { alert("Failed ❌"); return; }
     alert("Emulator added ✅");
     setEmuName(""); setEmuPlatform(""); setEmuDesc(""); setEmuLink("");
@@ -245,42 +326,69 @@ export default function Admin() {
   };
 
   if (loading) {
-    return <div className="text-white text-center mt-20">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-32">
+        <Loader />
+        <p className="font-mono text-[11px] tracking-[0.3em] text-neutral-500 uppercase">
+          Loading admin…
+        </p>
+      </div>
+    );
   }
 
   // ---- SHARED INPUT STYLES ----
-  const inputCls = "w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white placeholder-gray-500 mt-2 focus:outline-none focus:border-red-500";
-  const labelCls = "block text-gray-400 text-sm mt-4 mb-1";
-  const btnCls = "bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold";
+  const inputCls = "input mt-2";
+  const labelCls = "type-overline mt-5 mb-1.5 block text-neutral-500";
+  const btnCls = "rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow-sm active:translate-y-px";
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-black text-white p-6 max-w-6xl mx-auto">
+      <div className="mx-auto max-w-6xl px-6 py-10">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-red-500">Admin Panel</h1>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">
+          <div>
+            <span className="eyebrow">
+              <span className="h-px w-8 bg-brand/70" aria-hidden="true" />
+              Control center
+            </span>
+            <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Admin Panel
+            </h1>
+            <p className="mt-1 font-mono text-[11px] tracking-widest text-neutral-500 uppercase">
+              {hacks.length} hacks · {cheats.length} cheats · {emulators.length} emulators
+            </p>
+          </div>
           <button
             onClick={async () => {
               await supabase.auth.signOut();
               window.location.href = "/";
             }}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded"
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-neutral-300 transition hover:border-white/40 hover:bg-white/10"
           >
             Logout
           </button>
         </div>
 
         {/* TABS */}
-        <div className="flex gap-4 mb-8">
+        <div className="mb-8 inline-flex rounded-xl border border-white/10 bg-ink-900/80 p-1">
           {["hack", "cheat", "emulator"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded font-semibold ${
-                activeTab === tab ? "bg-red-500" : "bg-gray-700 hover:bg-gray-600"
+              aria-pressed={activeTab === tab}
+              className={`relative rounded-lg px-5 py-2 text-sm font-semibold tracking-wide transition-colors duration-300 ${
+                activeTab === tab ? "text-white" : "text-neutral-400 hover:text-white"
               }`}
             >
+              {activeTab === tab && (
+                <motion.span
+                  layoutId="admin-tab-pill"
+                  aria-hidden="true"
+                  className="absolute inset-0 -z-10 rounded-lg bg-brand shadow-glow-sm"
+                  transition={SPRING}
+                />
+              )}
               {tab.toUpperCase()}
             </button>
           ))}
@@ -291,11 +399,21 @@ export default function Admin() {
           <>
             {/* EDIT MODAL */}
             {editingHack && (
-              <div className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-start justify-center overflow-y-auto py-10">
-                <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-2xl mx-4">
-                  <h2 className="text-xl font-bold text-red-500 mb-4">
-                    Edit: {editingHack.title}
-                  </h2>
+              <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 py-10 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, y: 18, scale: 0.99 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="mx-4 w-full max-w-2xl rounded-2xl border border-white/10 bg-ink-850 p-6 shadow-panel sm:p-8"
+                >
+                  <div className="mb-5 border-b border-white/10 pb-4">
+                    <span className="font-mono text-[10px] tracking-[0.3em] text-brand-400 uppercase">
+                      Edit record
+                    </span>
+                    <h2 className="mt-1.5 font-display text-xl font-bold text-white">
+                      Edit: {editingHack.title}
+                    </h2>
+                  </div>
 
                   <label className={labelCls}>Title</label>
                   <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputCls} />
@@ -325,6 +443,38 @@ export default function Admin() {
                   <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)}
                     rows={4} className={inputCls} />
 
+                  <label className={labelCls}>Cover Image</label>
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <input value={editCoverUrl}
+                        onChange={(e) => setEditCoverUrl(e.target.value)}
+                        placeholder="Cover image URL — https://drive.google.com/file/d/…"
+                        className="input" />
+                      <input type="file" accept="image/*"
+                        onChange={(e) => setEditCoverFile(e.target.files?.[0] || null)}
+                        className="mt-2 block w-full text-sm text-gray-300
+                          file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+                          file:text-sm file:font-semibold file:bg-red-500 file:text-oncolor
+                          hover:file:bg-red-600 cursor-pointer" />
+                      {editCoverFile ? (
+                        <p className="text-green-400 text-sm mt-1">
+                          New file selected: {editCoverFile.name} (replaces the cover on save)
+                        </p>
+                      ) : (
+                        <p className="mt-1 font-mono text-[10px] text-neutral-500">
+                          Leave unchanged to keep the current cover image.
+                        </p>
+                      )}
+                    </div>
+                    {editCoverUrl.trim() !== "" ? (
+                      <Screenshot src={editCoverUrl} alt="Cover preview" variant="preview"
+                        unavailableLabel="Cover unavailable" />
+                    ) : (
+                      <div className="h-20 w-32 shrink-0 rounded-lg border border-dashed border-white/10 bg-white/[0.02]"
+                        aria-hidden="true" />
+                    )}
+                  </div>
+
                   <label className={labelCls}>Download Link</label>
                   <input value={editDownloadLink} onChange={(e) => setEditDownloadLink(e.target.value)} className={inputCls} />
 
@@ -340,60 +490,86 @@ export default function Admin() {
                   </button>
 
                   <label className={labelCls}>Screenshots (URLs)</label>
+                  <p className="mb-1 font-mono text-[10px] leading-relaxed text-neutral-500">
+                    {DRIVE_PUBLIC_HINT}
+                  </p>
                   {editScreenshots.map((s, i) => (
-                    <input key={i} value={s}
-                      onChange={(e) => handleEditScreenshotChange(i, e.target.value)}
-                      placeholder={`Screenshot URL ${i + 1}`} className={inputCls} />
+                    <div key={i} className="mt-2 flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <input value={s}
+                          onChange={(e) => handleEditScreenshotChange(i, e.target.value)}
+                          placeholder={`Screenshot URL ${i + 1} — https://drive.google.com/file/d/…`}
+                          className="input" />
+                      </div>
+                      {s.trim() !== "" ? (
+                        <Screenshot src={s} alt={`Screenshot ${i + 1} preview`} variant="preview" />
+                      ) : (
+                        <div className="h-20 w-32 shrink-0 rounded-lg border border-dashed border-white/10 bg-white/[0.02]"
+                          aria-hidden="true" />
+                      )}
+                      <button onClick={() => removeAt(editScreenshots, setEditScreenshots, i)}
+                        className="shrink-0 rounded-lg border border-white/15 px-3 py-2 text-sm text-neutral-400 transition hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-300">
+                        Remove
+                      </button>
+                    </div>
                   ))}
                   <button onClick={() => setEditScreenshots([...editScreenshots, ""])}
                     className="text-blue-400 text-sm mt-1 hover:underline">
                     + Add Screenshot
                   </button>
 
-                  <div className="flex gap-3 mt-6">
+                  <div className="mt-6 flex gap-3">
                     <button onClick={saveEdit} className={btnCls}>Save Changes</button>
                     <button onClick={() => setEditingHack(null)}
-                      className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">
+                      className="rounded-lg border border-white/15 px-4 py-2 text-sm font-medium text-neutral-300 transition duration-300 hover:border-white/40 hover:bg-white/10">
                       Cancel
                     </button>
                   </div>
-                </div>
+                </motion.div>
               </div>
             )}
 
             {/* EXISTING HACKS LIST */}
-            <h2 className="text-xl font-bold mb-4">Existing Hacks ({hacks.length})</h2>
+            <h2 className="mb-4 font-display text-xl font-bold text-white">Existing Hacks ({hacks.length})</h2>
             {hacks.length === 0 && (
-              <p className="text-gray-500 mb-4">No hacks yet.</p>
+              <p className="mb-4 text-neutral-500">No hacks yet.</p>
             )}
             {hacks.map((h) => (
-              <div key={h.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0 mr-4">
+              <div key={h.id} className="glass group mb-3 rounded-xl p-4 transition-[border-color,background-color] duration-300 hover:border-white/20 hover:bg-white/[0.04]">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold text-white">{h.title}</p>
-                    <p className="text-gray-400 text-sm">
-                      <span className="text-gray-500">Author:</span> {h.author}
+                    <p className="mt-0.5 text-sm text-neutral-400">
+                      <span className="text-neutral-500">Author:</span> {h.author}
                     </p>
-                    <p className="text-gray-400 text-sm">
-                      <span className="text-gray-500">Base Game:</span> {h.base_game} &nbsp;|&nbsp;
-                      <span className="text-gray-500">Platform:</span> {h.platform} &nbsp;|&nbsp;
-                      <span className="text-gray-500">Status:</span> {h.status} &nbsp;|&nbsp;
-                      <span className="text-gray-500">Rating:</span> {h.rating}/5
+                    <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-400">
+                      <span>
+                        <span className="text-neutral-500">Base:</span> {h.base_game}
+                      </span>
+                      <span>
+                        <span className="text-neutral-500">Platform:</span> {h.platform}
+                      </span>
+                      <span>
+                        <span className="text-neutral-500">Status:</span> {h.status}
+                      </span>
+                      <span>
+                        <span className="text-neutral-500">Rating:</span> {h.rating}/5
+                      </span>
                     </p>
                     {Array.isArray(h.features) && h.features.length > 0 && (
-                      <p className="text-gray-400 text-sm mt-1">
-                        <span className="text-gray-500">Features:</span>{" "}
+                      <p className="mt-1.5 text-sm text-neutral-400">
+                        <span className="text-neutral-500">Features:</span>{" "}
                         {h.features.join(", ")}
                       </p>
                     )}
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex shrink-0 gap-2">
                     <button onClick={() => openEdit(h)}
-                      className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
+                      className="rounded-lg border border-sky-400/30 bg-sky-400/10 px-3 py-1.5 text-sm font-medium text-sky-300 transition hover:bg-sky-400/20">
                       Edit
                     </button>
                     <button onClick={() => deleteItem("hacks", h.id)}
-                      className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">
+                      className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20">
                       Delete
                     </button>
                   </div>
@@ -402,8 +578,8 @@ export default function Admin() {
             ))}
 
             {/* UPLOAD NEW HACK */}
-            <h2 className="text-xl font-bold mt-10 mb-2">Upload New Hack</h2>
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <h2 className="mt-12 mb-2 font-display text-xl font-bold text-white">Upload New Hack</h2>
+            <div className="panel p-6">
 
               <label className={labelCls}>Title</label>
               <input value={title} placeholder="e.g. Pokemon Radical Red"
@@ -438,15 +614,32 @@ export default function Admin() {
                 onChange={(e) => setDescription(e.target.value)} rows={4} className={inputCls} />
 
               <label className={labelCls}>Cover Image</label>
-              <input type="file" accept="image/*"
-                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                className="block w-full text-sm text-gray-300 mt-2
-                  file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
-                  file:text-sm file:font-semibold file:bg-red-500 file:text-white
-                  hover:file:bg-red-600 cursor-pointer" />
-              {coverFile && (
-                <p className="text-green-400 text-sm mt-1">Selected: {coverFile.name}</p>
-              )}
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <input value={coverUrl}
+                    onChange={(e) => setCoverUrl(e.target.value)}
+                    placeholder="Cover image URL (optional) — https://drive.google.com/file/d/…"
+                    className="input" />
+                  <input type="file" accept="image/*"
+                    onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                    className="mt-2 block w-full text-sm text-gray-300
+                      file:mr-4 file:py-2 file:px-4 file:rounded file:border-0
+                      file:text-sm file:font-semibold file:bg-red-500 file:text-oncolor
+                      hover:file:bg-red-600 cursor-pointer" />
+                  {coverFile && (
+                    <p className="text-green-400 text-sm mt-1">
+                      Selected: {coverFile.name} (this file is used instead of the URL)
+                    </p>
+                  )}
+                </div>
+                {coverUrl.trim() !== "" ? (
+                  <Screenshot src={coverUrl} alt="Cover preview" variant="preview"
+                    unavailableLabel="Cover unavailable" />
+                ) : (
+                  <div className="h-20 w-32 shrink-0 rounded-lg border border-dashed border-white/10 bg-white/[0.02]"
+                    aria-hidden="true" />
+                )}
+              </div>
 
               <label className={labelCls}>Download Link</label>
               <input value={downloadLink} placeholder="https://..."
@@ -465,10 +658,28 @@ export default function Admin() {
               </button>
 
               <label className={labelCls}>Screenshots (URLs)</label>
+              <p className="mb-1 font-mono text-[10px] leading-relaxed text-neutral-500">
+                {DRIVE_PUBLIC_HINT}
+              </p>
               {screenshots.map((s, i) => (
-                <input key={i} value={s}
-                  onChange={(e) => handleScreenshotChange(i, e.target.value)}
-                  placeholder={`Screenshot URL ${i + 1}`} className={inputCls} />
+                <div key={i} className="mt-2 flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <input value={s}
+                      onChange={(e) => handleScreenshotChange(i, e.target.value)}
+                      placeholder={`Screenshot URL ${i + 1} — https://drive.google.com/file/d/…`}
+                      className="input" />
+                  </div>
+                  {s.trim() !== "" ? (
+                    <Screenshot src={s} alt={`Screenshot ${i + 1} preview`} variant="preview" />
+                  ) : (
+                    <div className="h-20 w-32 shrink-0 rounded-lg border border-dashed border-white/10 bg-white/[0.02]"
+                      aria-hidden="true" />
+                  )}
+                  <button onClick={() => removeAt(screenshots, setScreenshots, i)}
+                    className="shrink-0 rounded-lg border border-white/15 px-3 py-2 text-sm text-neutral-400 transition hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-300">
+                    Remove
+                  </button>
+                </div>
               ))}
               <button onClick={() => setScreenshots([...screenshots, ""])}
                 className="text-blue-400 text-sm mt-1 hover:underline">
@@ -485,28 +696,28 @@ export default function Admin() {
         {/* ================= CHEATS ================= */}
         {activeTab === "cheat" && (
           <>
-            <h2 className="text-xl font-bold mb-4">Existing Cheats ({cheats.length})</h2>
-            {cheats.length === 0 && <p className="text-gray-500 mb-4">No cheats yet.</p>}
+            <h2 className="mb-4 font-display text-xl font-bold text-white">Existing Cheats ({cheats.length})</h2>
+            {cheats.length === 0 && <p className="mb-4 text-neutral-500">No cheats yet.</p>}
             {cheats.map((c) => (
-              <div key={c.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">{c.title}</p>
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-gray-500">Game:</span> {c.game}
+              <div key={c.id} className="glass group mb-3 flex flex-wrap items-start justify-between gap-4 rounded-xl p-4 transition-[border-color,background-color] duration-300 hover:border-white/20 hover:bg-white/[0.04]">
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">{c.title}</p>
+                  <p className="mt-0.5 text-sm text-neutral-400">
+                    <span className="text-neutral-500">Game:</span> {c.game}
                   </p>
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-gray-500">Description:</span> {c.description}
+                  <p className="mt-1 text-sm text-neutral-400">
+                    <span className="text-neutral-500">Description:</span> {c.description}
                   </p>
                 </div>
                 <button onClick={() => deleteItem("cheats", c.id)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm shrink-0 ml-4">
+                  className="shrink-0 rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20">
                   Delete
                 </button>
               </div>
             ))}
 
-            <h2 className="text-xl font-bold mt-10 mb-2">Add Cheat</h2>
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <h2 className="mt-10 mb-2 font-display text-xl font-bold text-white">Add Cheat</h2>
+            <div className="panel p-6">
               <label className={labelCls}>Title</label>
               <input value={cheatTitle} placeholder="Cheat name"
                 onChange={(e) => setCheatTitle(e.target.value)} className={inputCls} />
@@ -533,28 +744,28 @@ export default function Admin() {
         {/* ================= EMULATORS ================= */}
         {activeTab === "emulator" && (
           <>
-            <h2 className="text-xl font-bold mb-4">Existing Emulators ({emulators.length})</h2>
-            {emulators.length === 0 && <p className="text-gray-500 mb-4">No emulators yet.</p>}
+            <h2 className="mb-4 font-display text-xl font-bold text-white">Existing Emulators ({emulators.length})</h2>
+            {emulators.length === 0 && <p className="mb-4 text-neutral-500">No emulators yet.</p>}
             {emulators.map((e) => (
-              <div key={e.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-3 flex justify-between items-start">
-                <div>
-                  <p className="font-semibold">{e.name}</p>
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-gray-500">Platform:</span> {e.platform}
+              <div key={e.id} className="glass group mb-3 flex flex-wrap items-start justify-between gap-4 rounded-xl p-4 transition-[border-color,background-color] duration-300 hover:border-white/20 hover:bg-white/[0.04]">
+                <div className="min-w-0">
+                  <p className="font-semibold text-white">{e.name}</p>
+                  <p className="mt-0.5 text-sm text-neutral-400">
+                    <span className="text-neutral-500">Platform:</span> {e.platform}
                   </p>
-                  <p className="text-gray-400 text-sm">
-                    <span className="text-gray-500">Description:</span> {e.description}
+                  <p className="mt-1 text-sm text-neutral-400">
+                    <span className="text-neutral-500">Description:</span> {e.description}
                   </p>
                 </div>
                 <button onClick={() => deleteItem("emulators", e.id)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm shrink-0 ml-4">
+                  className="shrink-0 rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-sm font-medium text-rose-300 transition hover:bg-rose-500/20">
                   Delete
                 </button>
               </div>
             ))}
 
-            <h2 className="text-xl font-bold mt-10 mb-2">Add Emulator</h2>
-            <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+            <h2 className="mt-10 mb-2 font-display text-xl font-bold text-white">Add Emulator</h2>
+            <div className="panel p-6">
               <label className={labelCls}>Name</label>
               <input value={emuName} placeholder="e.g. mGBA"
                 onChange={(e) => setEmuName(e.target.value)} className={inputCls} />
@@ -567,9 +778,22 @@ export default function Admin() {
               <textarea value={emuDesc} placeholder="Describe the emulator..."
                 onChange={(e) => setEmuDesc(e.target.value)} rows={3} className={inputCls} />
 
-              <label className={labelCls}>Download Link</label>
-              <input value={emuLink} placeholder="https://..."
-                onChange={(e) => setEmuLink(e.target.value)} className={inputCls} />
+              {hasEmuLinkCol ? (
+                <>
+                  <label className={labelCls}>Download Link</label>
+                  <input value={emuLink} placeholder="https://..."
+                    onChange={(e) => setEmuLink(e.target.value)} className={inputCls} />
+                </>
+              ) : (
+                <p className="text-yellow-500 text-sm mt-4">
+                  ⚠️ The <code>emulators</code> table has no <code>download_link</code> column yet,
+                  so the link is not saved. Run this in the Supabase SQL Editor to enable it:
+                  <br />
+                  <code className="text-gray-300">
+                    alter table public.emulators add column if not exists download_link text;
+                  </code>
+                </p>
+              )}
 
               <button onClick={addEmu} className={`${btnCls} mt-6 w-full`}>
                 Add Emulator

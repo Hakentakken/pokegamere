@@ -1,16 +1,22 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import PageWrapper from "../components/PageWrapper";
 import HackCard from "../components/HackCard";
+import Loader from "../components/Loader";
+import SectionHeader from "../components/SectionHeader";
+import DetailHero from "../components/hack/DetailHero";
+import ScreenshotGallery from "../components/ScreenshotGallery";
+import DownloadBand from "../components/hack/DownloadBand";
+import { parseImageList, parseTextList } from "../lib/imageList";
+
+const HOW_TO_PLAY = ["Download base ROM", "Download patch", "Use patcher tool", "Run in emulator"];
 
 export default function HackDetail() {
   const { id } = useParams();
   const [hack, setHack] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // ✅ NEW STATE (only addition)
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -26,8 +32,6 @@ export default function HackDetail() {
         .single();
 
       if (error) throw error;
-
-      console.log("RAW screenshots:", data.screenshots);
 
       setHack(data);
 
@@ -55,184 +59,116 @@ export default function HackDetail() {
     }, 1200);
   };
 
-  // 🔥 ARRAY PARSER (UNCHANGED)
-  const getArray = (val: any): string[] => {
-    if (!val) return [];
-
-    const clean = (url: string) =>
-      url.trim().replace(/^"|"$/g, "");
-
-    if (Array.isArray(val)) {
-      return val.map(clean).filter((v) => v !== "");
-    }
-
-    if (typeof val === "string") {
-      const inner = val.replace(/^\{|\}$/g, "");
-      if (!inner) return [];
-      return inner
-        .split(",")
-        .map(clean)
-        .filter((v) => v !== "");
-    }
-
-    return [];
-  };
-
-  // ⭐ Rating (UNCHANGED)
-  const renderRating = (rating: any) => {
-    const num = parseFloat(rating) || 0;
-    const full = Math.floor(num);
-    const half = num % 1 >= 0.5;
-    const empty = 5 - full - (half ? 1 : 0);
-
+  if (loading) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex text-yellow-400 text-xl">
-          {"★".repeat(full)}
-          {half ? "½" : ""}
-          <span className="text-gray-600">
-            {"★".repeat(empty)}
-          </span>
-        </div>
-        <span className="text-gray-400 text-sm">
-          {num}/5
-        </span>
+      <div className="flex flex-col items-center justify-center gap-4 py-32">
+        <Loader />
+        <p className="font-mono text-[11px] tracking-[0.3em] text-neutral-500 uppercase">
+          Loading hack…
+        </p>
       </div>
     );
-  };
-
-  if (loading) {
-    return <div className="text-white text-center mt-20">Loading...</div>;
   }
 
   if (!hack) {
-    return <div className="text-white text-center mt-20">Hack not found</div>;
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-32 text-center">
+        <span className="text-4xl" aria-hidden="true">
+          🕹️
+        </span>
+        <p className="font-display text-xl font-bold text-white">Hack not found</p>
+        <Link to="/hacks" className="btn-ghost">
+          Browse other hacks
+        </Link>
+      </div>
+    );
   }
 
-  const screenshots = getArray(hack.screenshots);
-  const features = getArray(hack.features);
-
-  console.log("PARSED screenshots:", screenshots);
-
-  const SectionHeading = ({ children }: { children: React.ReactNode }) => (
-    <div className="mt-10 mb-4">
-      <h2 className="text-2xl font-bold text-white">{children}</h2>
-      <div className="h-0.5 bg-gray-700 mt-2" />
-    </div>
-  );
+  // 🔥 ARRAY PARSERS — shared codec that understands every legacy encoding
+  // stored in `hacks.screenshots` / `hacks.features` (see src/lib/imageList.ts)
+  const screenshots = parseImageList(hack.screenshots);
+  const features = parseTextList(hack.features);
+  const download = () => hack.download_link && handleDownload(hack.download_link);
 
   return (
     <PageWrapper>
-      <div className="p-4 max-w-5xl mx-auto text-white">
+      <DetailHero hack={hack} downloading={downloading} onDownload={download} />
 
-        {/* MAIN INFO */}
-        <div className="grid md:grid-cols-2 gap-8">
-          <img
-            src={hack.cover_image || "https://placehold.co/500x300"}
-            alt={hack.title}
-            className="w-full rounded-xl object-cover max-h-80 md:max-h-full"
-          />
+      {/* DESCRIPTION + FEATURES */}
+      <section className="shell band-tight">
+        <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
+          <div>
+            <SectionHeader eyebrow="The story" title="About this hack" />
+            <p className="type-lede mt-6 whitespace-pre-line">
+              {hack.description || "No description available."}
+            </p>
+          </div>
 
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold">{hack.title}</h1>
-            <p className="text-gray-400">by {hack.author || "Unknown"}</p>
-
-            <div className="flex gap-2 flex-wrap text-sm">
-              {hack.base_game && (
-                <span className="bg-red-500 px-2 py-1 rounded">
-                  {hack.base_game}
-                </span>
-              )}
-              {hack.platform && (
-                <span className="bg-blue-500 px-2 py-1 rounded">
-                  {hack.platform}
-                </span>
-              )}
-              {hack.status && (
-                <span className="bg-green-500 px-2 py-1 rounded">
-                  {hack.status}
-                </span>
-              )}
-            </div>
-
-            {renderRating(hack.rating)}
-
-            {/* 🔥 UPDATED DOWNLOAD BUTTON */}
-            {hack.download_link ? (
-              <button
-                onClick={() => handleDownload(hack.download_link)}
-                className="block w-full text-center bg-red-500 hover:bg-red-600 px-6 py-3 rounded-lg font-semibold"
-              >
-                {downloading ? "Preparing Download..." : "Download ROM / Patch"}
-              </button>
+          <div>
+            <SectionHeader eyebrow="What's inside" title="Features" />
+            {features.length > 0 ? (
+              <ul className="mt-6 space-y-3">
+                {features.map((feature, i) => (
+                  <li key={i} className="flex gap-3 text-neutral-300">
+                    <span className="mt-0.5 text-brand-400" aria-hidden="true">▸</span>
+                    <span className="leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div className="text-gray-400">🚧 No download link</div>
+              <p className="mt-6 text-neutral-500">No feature list provided.</p>
             )}
           </div>
         </div>
+      </section>
 
-        {/* DESCRIPTION */}
-        <SectionHeading>📖 Description</SectionHeading>
-        <p className="text-gray-300">
-          {hack.description || "No description available."}
-        </p>
-
-        {/* FEATURES */}
-        {features.length > 0 && (
-          <>
-            <SectionHeading>✨ Features</SectionHeading>
-            <ul className="space-y-2">
-              {features.map((f, i) => (
-                <li key={i} className="flex gap-2 text-gray-300">
-                  <span className="text-red-400">▸</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {/* SCREENSHOTS */}
-        <SectionHeading>🖼️ Screenshots</SectionHeading>
-
-        {screenshots.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {screenshots.map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt={`Screenshot ${i}`}
-                className="rounded-lg w-full object-cover aspect-video bg-gray-800"
-                loading="lazy"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.onerror = null;
-                  target.src = "https://placehold.co/300x180?text=Image+Error";
-                }}
-              />
-            ))}
+      {/* SCREENSHOTS */}
+      <section className="relative border-t border-white/10">
+        <div className="shell band-tight">
+          <SectionHeader
+            eyebrow="In motion"
+            title="Screenshots"
+            lede={
+              screenshots.length > 1
+                ? "Select any shot to open it full screen — arrow keys work once it is open."
+                : undefined
+            }
+          />
+          <div className="mt-10">
+            {screenshots.length > 0 ? (
+              <ScreenshotGallery images={screenshots} title={hack.title} />
+            ) : (
+              <p className="text-neutral-500">No screenshots available.</p>
+            )}
           </div>
-        ) : (
-          <p className="text-gray-500">No screenshots available.</p>
-        )}
+        </div>
+      </section>
 
-        {/* HOW TO PLAY */}
-        <SectionHeading>🎮 How to Play</SectionHeading>
-        <ol className="list-decimal list-inside text-gray-300 space-y-2">
-          <li>Download base ROM</li>
-          <li>Download patch</li>
-          <li>Use patcher tool</li>
-          <li>Run in emulator</li>
-        </ol>
+      {/* HOW TO PLAY + DOWNLOAD */}
+      <DownloadBand
+        hack={hack}
+        downloading={downloading}
+        steps={HOW_TO_PLAY}
+        onDownload={download}
+      />
 
-        {/* RELATED */}
-        <SectionHeading>🕹️ Related Hacks</SectionHeading>
-
-        {related.length === 0 ? (
-          <p className="text-gray-400">No related hacks</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {related.map((h) => (
+      {/* RELATED */}
+      <section className="relative border-t border-white/10">
+        <div className="shell band-tight">
+          <SectionHeader
+            eyebrow="Keep exploring"
+            title="Related hacks"
+            action={
+              <Link
+                to="/hacks"
+                className="link-underline text-sm font-medium text-neutral-400 transition-colors duration-300 hover:text-white"
+              >
+                All hacks →
+              </Link>
+            }
+          />
+          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((h, i) => (
               <HackCard
                 key={h.id}
                 id={String(h.id)}
@@ -244,12 +180,12 @@ export default function HackDetail() {
                 status={h.status}
                 coverImage={h.cover_image}
                 description={h.description}
+                index={i}
               />
             ))}
           </div>
-        )}
-
-      </div>
+        </div>
+      </section>
     </PageWrapper>
   );
 }
