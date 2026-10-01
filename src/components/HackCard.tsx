@@ -14,11 +14,22 @@ type Props = {
   status: string;
   coverImage: string;
   description: string;
-  /** grid = equal tiles · rail = portrait showcase cards · compact = dense list */
+  /** grid = equal tiles · rail = landscape (16:9) showcase cards · compact = dense list */
   variant?: "grid" | "rail" | "compact";
   /** Position in a grid — drives the directional entrance. */
   index?: number;
   showActions?: boolean;
+};
+
+/**
+ * Slight, per-name type step-down for the title: as a name gets longer it
+ * drops one size so it still fits the two lines the card reserves — a small
+ * shrink beats shrinking until the type is tiny, and short names keep the
+ * default size untouched.
+ */
+const titleSizeFor = (title: string | null | undefined) => {
+  const len = title?.length ?? 0;
+  return len > 64 ? "text-sm" : len > 48 ? "text-base" : "text-lg";
 };
 
 /**
@@ -48,7 +59,11 @@ export default function HackCard({
 
   const rail = variant === "rail";
   const compact = variant === "compact";
-  const frame = rail ? "aspect-[3/4]" : compact ? "aspect-[16/9]" : "aspect-[16/10]";
+  // Thumbnails are landscape 16:9 (1280×720 art) — the old portrait rail
+  // frame made cards excessively tall. The frame ratio owns the crop and
+  // `CoverImage` object-fits into it, so any source size fills the box
+  // cleanly without stretching or distorting.
+  const frame = rail || compact ? "aspect-[16/9]" : "aspect-[16/10]";
 
   return (
     <motion.article
@@ -95,7 +110,21 @@ export default function HackCard({
       {/* CONTENT */}
       <div className={`flex flex-1 flex-col ${rail ? "gap-3 p-5" : compact ? "gap-2 p-4" : "gap-3 p-4"}`}>
         <div>
-          <h3 className="font-display text-lg leading-snug font-bold text-white transition-colors duration-300 group-hover:text-brand-400">{title}</h3>
+          {/*
+            Two title lines are reserved (`min-h` = 2 × text-lg/leading-snug = 49.5px)
+            and the size steps down slightly as a name grows, so short and long
+            names share one baseline and the card height never depends on the
+            title. `break-words` stops unbroken strings from overflowing the
+            card; `line-clamp-2` is the final guard for pathological names —
+            they wrap onto two lines instead of growing the card, and the native
+            tooltip still exposes the full name.
+          */}
+          <h3
+            title={title && title.length > 40 ? title : undefined}
+            className={`font-display leading-snug font-bold text-white break-words line-clamp-2 min-h-[49.5px] transition-colors duration-300 group-hover:text-brand-400 ${titleSizeFor(title)}`}
+          >
+            {title}
+          </h3>
           <p className="mt-0.5 text-sm text-neutral-500">by {author || "Unknown"}</p>
         </div>
 

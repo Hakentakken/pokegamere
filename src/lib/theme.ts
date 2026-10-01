@@ -108,14 +108,15 @@ export function useTheme() {
   }, []);
 
   const toggle = useCallback(() => {
-    setTheme((current) => {
-      const next: Theme = current === "dark" ? "light" : "dark";
-      applyTheme(next, true);
-      store(next);
-      broadcast(next);
-      return next;
-    });
-  }, []);
+    // React may evaluate a `setState` updater more than once (eager evaluation
+    // at dispatch time, then again during render). Side effects inside it would
+    // run twice — first flipping the theme, then flipping it straight back —
+    // so the switch appears dead. Compute the next value and hand it to
+    // `setThemeAndApply`, which applies/persists/notifies exactly once; a
+    // direct value in the queue is idempotent however often React reads it.
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    setThemeAndApply(next);
+  }, [theme, setThemeAndApply]);
 
   return { theme, isDark: theme === "dark", setTheme: setThemeAndApply, toggle };
 }

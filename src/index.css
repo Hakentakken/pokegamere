@@ -157,9 +157,34 @@ html.light {
   /* Native controls follow the active theme (set from JS + the token below) */
   input,
   textarea,
-  select,
-  option {
+  select {
     color-scheme: inherit;
+  }
+
+  /* Native dropdown items follow the active theme. The popup itself is
+     OS-rendered, so without this the list stays light while the field
+     around it goes dark (white rows + white text). */
+  option {
+    background-color: rgb(var(--c-ink-900));
+    color: rgb(var(--c-n-200));
+  }
+  html.light option {
+    background-color: #ffffff;
+    color: #111827;
+  }
+
+  /* Native file-picker button follows the theme (otherwise it stays light
+     grey/white while the field around it goes dark). */
+  input[type='file']::file-selector-button,
+  input[type='file']::-webkit-file-upload-button {
+    font: inherit;
+    color: rgb(var(--c-n-200));
+    background-color: rgb(var(--c-ink-700));
+    border: 1px solid rgb(var(--c-ink-700));
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    margin-right: 0.9rem;
+    cursor: pointer;
   }
 
   ::selection {
@@ -432,6 +457,10 @@ html.light .keyart {
     content: "";
     position: absolute;
     inset: 0;
+    /* Decorative frame only — without this it paints above the statically
+       positioned content and silently swallows clicks meant for the buttons
+       inside the card (Details/Patch etc.). */
+    pointer-events: none;
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(
