@@ -5,6 +5,10 @@ import PageWrapper from "../components/PageWrapper";
 import Atmosphere from "../components/Atmosphere";
 import SplitHeading from "../components/SplitHeading";
 import Reveal from "../components/Reveal";
+import PatcherRoom, {
+  type PatcherRoomHandle,
+} from "../components/patcher/PatcherRoom";
+import type { RoomStationId } from "../components/patcher/roomLayout";
 import { DUR, EASE, stagger } from "../lib/motion";
 import { supabase } from "../lib/supabase";
 import { loadRomPatcherWeb, type RpBinFile } from "../lib/romPatcher";
@@ -28,9 +32,10 @@ type HackRow = {
   download_link: string | null;
 };
 
+type RoomStation = RoomStationId;
+
 const formatBytes = (n: number) =>
   n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(2)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
-
 
 /**
  * ROM Patcher — the existing page, now powered by the bundled RomPatcher.js
@@ -72,6 +77,43 @@ export default function Patcher() {
   const [patchName, setPatchName] = useState<string | null>(null);
   const [output, setOutput] = useState<{ name: string; url: string } | null>(null);
   const outputRef = useRef<{ name: string; url: string } | null>(null);
+
+  /* Presentation-only camera state. The room component owns the 3D scene and the
+     drag-to-look interaction; the page only tracks which station the camera has
+     settled on so the chips can reflect it. Nothing here touches patching. */
+  const [roomStation, setRoomStation] = useState<RoomStation>("center");
+  const [roomReduced, setRoomReduced] = useState(false);
+  const roomRef = useRef<PatcherRoomHandle | null>(null);
+  const roomScrollRef = useRef(false);
+  const roomStationsRef = useRef<Partial<Record<RoomStation, HTMLLIElement | null>>>({});
+  // The three station mounts: real DOM the room projects every frame.
+  const leftMount = useRef<HTMLDivElement | null>(null);
+  const centerMount = useRef<HTMLDivElement | null>(null);
+  const rightMount = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setRoomReduced(mq.matches);
+    apply();
+    mq.addEventListener?.("change", apply);
+    return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
+  /* Presentation only: when WebGL is unavailable the room falls back to a plain
+     list, and a deliberate turn (chip or finished drag) scrolls that station
+     into view. Never runs on load. */
+  useEffect(() => {
+    if (!roomScrollRef.current) return;
+    roomScrollRef.current = false;
+    const node = roomStationsRef.current[roomStation];
+    node?.scrollIntoView({ behavior: roomReduced ? "auto" : "smooth", block: "center" });
+  }, [roomStation, roomReduced]);
+
+  const lookAtStation = (station: RoomStation) => {
+    roomRef.current?.lookAt(station);
+    setRoomStation(station);
+    roomScrollRef.current = true;
+  };
 
   const clearOutput = () => {
     if (outputRef.current) {
@@ -281,6 +323,25 @@ export default function Patcher() {
             subClassName="font-display text-xl font-medium text-brand-400 sm:text-2xl"
             className="type-display mt-8 font-display font-bold text-white"
           />
+          {/* Station status chips — pure decoration, zero logic. Kept in the same
+              place and order, with the glow dialled right down so the page
+              reads as a control room rather than a neon cloud. */}
+          <Reveal as="up" delay={0.32}>
+            <div className="mt-7 flex flex-wrap justify-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.22em]">
+              <span className="inline-flex items-center gap-2 rounded-sm border border-emerald-400/20 bg-emerald-400/[0.05] px-4 py-1.5 text-emerald-300/90">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80" />
+                In-browser
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-sm border border-sky-400/20 bg-sky-400/[0.05] px-4 py-1.5 text-sky-300/90">
+                <span className="h-1.5 w-1.5 rounded-full bg-sky-400/80" />
+                No uploads
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-sm border border-white/10 bg-white/[0.03] px-4 py-1.5 text-neutral-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-400/80" />
+                IPS · BPS · UPS · APS · PPF
+              </span>
+            </div>
+          </Reveal>
 
           <Reveal as="up" delay={0.3}>
             <p className="type-lede mx-auto mt-6 max-w-xl">
@@ -293,11 +354,24 @@ export default function Patcher() {
               one names the patched output; "Get the patch file" opens the
               hack's existing download link so the patch can be picked below. */}
           <Reveal as="up" delay={0.35}>
-            <div className="glass mx-auto mt-9 max-w-3xl rounded-2xl p-5 text-left">
-              <span className="type-overline text-neutral-600">Select hack</span>
+            <div className="glass patcher-panel relative mx-auto mt-9 max-w-3xl overflow-hidden rounded-xl p-5 text-left">
+              <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-brand-500/80 to-transparent" />
+              <div className="flex items-center justify-between gap-3">
+                <span className="type-overline font-mono text-neutral-500">Cartridge select</span>
+                {/* Slot indicator — quiet hardware read-out, not an LED show. */}
+                <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                  <span
+                    aria-hidden="true"
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      selectedHack ? "bg-brand-400" : "bg-neutral-600"
+                    }`}
+                  />
+                  Slot A
+                </span>
+              </div>
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <select
-                  className="input"
+                  className="input patcher-select font-mono text-[13px] tracking-wide"
                   aria-label="Select hack"
                   value={hackId}
                   onChange={(e) => setHackId(e.target.value)}
@@ -328,23 +402,105 @@ export default function Patcher() {
             </div>
           </Reveal>
 
-          {/* The real three-step flow — same stage cards, same entrance
-              animation, now containing the working patcher controls. */}
+          {/* Three patching stations inside a real 3D room (WebGL). The cards below
+              are the page's own markup, mounted exactly once and positioned each
+              frame by projecting their console anchors through the room camera —
+              so every id, ref, drag/drop handler and the patch engine stay intact.
+              Click-and-drag (or finger-drag) turns the camera. */}
           <Reveal as="up" delay={0.4}>
-            <ol className="mx-auto mt-12 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
-              {STAGES.map((stage, i) => (
-                <motion.li
-                  key={stage.label}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: DUR.component, delay: 0.5 + stagger(i, 0.12), ease: EASE.out }}
-                  className="glass rounded-2xl p-5"
-                >
+            <div className="patcher-room-shell">
+              <div
+                className="patcher-room-nav"
+                role="group"
+                aria-label="Look at a patching station"
+              >
+                {(["left", "center", "right"] as RoomStation[]).map((station, idx) => (
+                  <button
+                    key={station}
+                    type="button"
+                    aria-pressed={roomStation === station}
+                    onClick={() => lookAtStation(station)}
+                    className={`patcher-room-dot${roomStation === station ? " patcher-room-dot--on" : ""}`}
+                  >
+                    <span aria-hidden="true" className="patcher-room-dot-pip" />
+                    <span>
+                      0{idx + 1} ·{" "}
+                      {station === "left" ? "ROM" : station === "center" ? "Patch" : "Apply"}
+                    </span>
+                  </button>
+                ))}
+                <span className="patcher-room-hint">
+                  {roomReduced ? "Drag to look around" : "Click and drag to look around"}
+                </span>
+              </div>
+
+              <PatcherRoom
+                ref={roomRef}
+                reduced={roomReduced}
+                mounts={{
+                  left: leftMount,
+                  center: centerMount,
+                  right: rightMount,
+                }}
+                tones={{
+                  left: rom ? "ready" : "idle",
+                  center: patchName ? "ready" : "idle",
+                  right: output ? "done" : "idle",
+                }}
+                onSettle={(id) => {
+                  setRoomStation(id);
+                  roomScrollRef.current = true;
+                }}
+              >
+                <ol className="patcher-room-list">
+                  {STAGES.map((stage, i) => {
+                    const station: RoomStation = i === 0 ? "left" : i === 1 ? "center" : "right";
+                    const mount = i === 0 ? leftMount : i === 1 ? centerMount : rightMount;
+                    return (
+                      <motion.li
+                        key={stage.label}
+                        ref={(node: HTMLLIElement | null) => {
+                          roomStationsRef.current[station] = node;
+                        }}
+                        initial={{ opacity: 0, y: 18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: DUR.component,
+                          delay: 0.5 + stagger(i, 0.12),
+                          ease: EASE.out,
+                        }}
+                        className="patcher-station"
+                      >
+                        <div ref={mount} className="patcher-mount">
+                          <div
+                            className={`patcher-step patcher-panel3d glass relative overflow-hidden rounded-xl p-5 ${
+                              rom && i === 0 ? "patcher-step--ready" : ""
+                            } ${patchName && i === 1 ? "patcher-step--ready" : ""} ${
+                              output && i === 2 ? "patcher-step--done" : ""
+                            }`}
+                          >
+                  <span aria-hidden="true" className="patcher-step-num">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-brand-500/70 to-transparent" />
                   <div
                     onDragOver={i < 2 ? allowDrop : undefined}
                     onDrop={i === 0 ? makeDrop("rom") : i === 1 ? makeDrop("patch") : undefined}
                   >
-                    <span className="type-overline text-neutral-600">Step {i + 1}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="type-overline font-mono text-neutral-500">Step {i + 1}</span>
+                      <span
+                        className={`patcher-led font-mono text-[10px] uppercase tracking-[0.2em] ${
+                          (i === 0 && rom) || (i === 1 && patchName) || (i === 2 && output)
+                            ? "patcher-led--on"
+                            : ""
+                        }`}
+                      >
+                        {(i === 0 && rom) || (i === 1 && patchName) || (i === 2 && output)
+                          ? "Loaded"
+                          : "Empty"}
+                      </span>
+                    </div>
                     <p className="mt-2 text-sm leading-relaxed text-neutral-300">{stage.label}</p>
 
                     {/* STEP 1 — ROM input (engine-required element) */}
@@ -356,7 +512,7 @@ export default function Patcher() {
                           type="file"
                           accept={ROM_ACCEPT}
                           disabled
-                          className="input mt-3 w-full cursor-pointer"
+                          className="input patcher-file mt-3 w-full cursor-pointer"
                         />
                         <p className="mt-2 font-mono text-[10px] break-all tracking-[0.12em] text-neutral-600 uppercase">
                           CRC32 <span id="rom-patcher-span-crc32" /> · MD5{" "}
@@ -391,7 +547,7 @@ export default function Patcher() {
                           type="file"
                           accept={PATCH_ACCEPT}
                           disabled
-                          className="input mt-3 w-full cursor-pointer"
+                          className="input patcher-file mt-3 w-full cursor-pointer"
                         />
                         <div
                           id="rom-patcher-row-patch-description"
@@ -413,10 +569,14 @@ export default function Patcher() {
                           id="rom-patcher-button-apply"
                           type="button"
                           disabled
-                          className="btn-hero mt-3 w-full disabled:cursor-not-allowed disabled:opacity-50"
+                          className="btn-hero patcher-apply mt-3 w-full font-mono uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Apply patch
+                          <span aria-hidden="true" className="patcher-apply-fill" />
+                          <span className="relative">Apply patch</span>
                         </button>
+                        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-600">
+                          Press start
+                        </p>
                         <div
                           id="rom-patcher-row-error-message"
                           className="mt-3 text-xs leading-relaxed text-red-400"
@@ -443,9 +603,14 @@ export default function Patcher() {
                       </>
                     )}
                   </div>
-                </motion.li>
-              ))}
-            </ol>
+                          </div>
+                        </div>
+                      </motion.li>
+                    );
+                  })}
+                </ol>
+              </PatcherRoom>
+            </div>
           </Reveal>
 
           <Reveal as="up" delay={0.7}>
