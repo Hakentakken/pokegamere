@@ -527,8 +527,10 @@ html.light .keyart {
     .patcher-room {
       height: clamp(460px, 68vh, 620px);
     }
+    /* Narrower card on phones so the console's 3D housing around the screen
+       still fits inside the room's frame, with room context left visible. */
     .patcher-mount {
-      width: min(94vw, 360px);
+      width: min(84vw, 320px);
     }
   }
   @media (prefers-reduced-motion: reduce) {

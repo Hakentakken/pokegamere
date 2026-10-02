@@ -101,10 +101,14 @@ export default function Patcher() {
 
   /* Presentation only: when WebGL is unavailable the room falls back to a plain
      list, and a deliberate turn (chip or finished drag) scrolls that station
-     into view. Never runs on load. */
+     into view. Never runs on load, and never in 3D: there the cards are
+     projected inside a clipped `overflow: hidden` viewport, so `scrollIntoView`
+     would scroll that room (and the page with it) instead of revealing
+     anything — which is what made the page jump while rotating. */
   useEffect(() => {
     if (!roomScrollRef.current) return;
     roomScrollRef.current = false;
+    if (roomRef.current?.mode !== "flat") return;
     const node = roomStationsRef.current[roomStation];
     node?.scrollIntoView({ behavior: roomReduced ? "auto" : "smooth", block: "center" });
   }, [roomStation, roomReduced]);
