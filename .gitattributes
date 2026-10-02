@@ -1,0 +1,2 @@
+# Keep ads.txt byte-exact (LF) so AdSense verification never sees CRLF drift.
+public/ads.txt -text eol=lf
