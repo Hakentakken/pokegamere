@@ -10,6 +10,7 @@
     "check:db": "node connection-check.mjs",
     "check:images": "node verify-images.mjs",
     "check:ui": "node smoke-render.mjs",
+    "check:vcdiff": "node check-vcdiff-lzma.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -19,6 +19,7 @@ const XDELTA_110_MAGIC='%XDZ004';
 if(typeof module !== "undefined" && module.exports){
 	module.exports = VCDIFF;
 	BinFile = require("./BinFile");
+	VCDIFF_LZMA_Stream = require("./RomPatcher.secondary.lzma");
 }
 
 function VCDIFF(patchFile){
@@ -38,12 +39,19 @@ VCDIFF.prototype.apply=function(romFile, validate){
 	parser.seek(4);
 	var headerIndicator=parser.readU8();
 
+	var lzmaSecondaryStreams=null;
 	if(headerIndicator & VCD_DECOMPRESS){
 		//has secondary decompressor, read its id
 		var secondaryDecompressorId=parser.readU8();
 
-		if(secondaryDecompressorId!==0)
-			throw new Error('not implemented: secondary decompressor');
+		if(secondaryDecompressorId===VCD_LZMA_ID){
+			//xdelta3's LZMA secondary compressor (its default when built with
+			//liblzma). One persistent xz/LZMA2 decoder per section type for the
+			//whole apply pass, mirroring xdelta3's xd3_get_secondary
+			lzmaSecondaryStreams=[new VCDIFF_LZMA_Stream(), new VCDIFF_LZMA_Stream(), new VCDIFF_LZMA_Stream()];
+		}else if(secondaryDecompressorId!==0){
+			throw new Error('not implemented: secondary decompressor '+secondaryDecompressorId);
+		}
 	}
 
 
@@ -85,16 +93,54 @@ VCDIFF.prototype.apply=function(romFile, validate){
 	while(!parser.isEOF()){
 		var winHeader = parser.decodeWindowHeader();
 
+		//section offsets/lengths as stored in the patch (compressed lengths)
+		var addRunDataSectionEnd = parser.offset + winHeader.addRunDataLength;
+		var instructionsSectionEnd = addRunDataSectionEnd + winHeader.instructionsLength;
+		var addressesSectionEnd = instructionsSectionEnd + winHeader.addressesLength;
+
 		var addRunDataStream = new VCDIFF_Parser(this.file, parser.offset);
-		var instructionsStream = new VCDIFF_Parser(this.file, addRunDataStream.offset + winHeader.addRunDataLength);
-		var addressesStream = new VCDIFF_Parser(this.file, instructionsStream.offset + winHeader.instructionsLength);
+		var instructionsStream = new VCDIFF_Parser(this.file, addRunDataSectionEnd);
+		var addressesStream = new VCDIFF_Parser(this.file, instructionsSectionEnd);
+		var instructionsStreamEndOffset = instructionsSectionEnd;
+
+		if(winHeader.deltaIndicator!==0){
+			//secondary compression: every marked section starts with the 7-bit
+			//uncompressed size, followed by its compressed xz/LZMA2 bytes
+			if(lzmaSecondaryStreams===null)
+				throw new Error('invalid VCDIFF patch: compressed section without a secondary decompressor');
+
+			var sectionStreams=[addRunDataStream, instructionsStream, addressesStream];
+			var sectionCompFlags=[VCD_DATACOMP, VCD_INSTCOMP, VCD_ADDRCOMP];
+			var sectionEnds=[addRunDataSectionEnd, instructionsSectionEnd, addressesSectionEnd];
+
+			for(var s=0; s<3; s++){
+				if(!(winHeader.deltaIndicator & sectionCompFlags[s]))
+					continue;
+
+				var sectionSize=sectionStreams[s].read7BitEncodedInt();
+				var sectionStart=sectionStreams[s].offset;
+				var compressedBytes=new Uint8Array(sectionEnds[s]-sectionStart);
+				compressedBytes.set(this.file._u8array.subarray(sectionStart, sectionEnds[s]));
+
+				var decompressedBytes=lzmaSecondaryStreams[s].feed(compressedBytes, sectionSize);
+				if(decompressedBytes.length!==sectionSize)
+					throw new Error('truncated xz secondary stream ('+decompressedBytes.length+' of '+sectionSize+' bytes decoded)');
+				sectionStreams[s]=new VCDIFF_Parser(new BinFile(decompressedBytes), 0);
+
+				if(s===1)
+					instructionsStreamEndOffset=sectionSize;
+			}
+
+			addRunDataStream=sectionStreams[0];
+			instructionsStream=sectionStreams[1];
+			addressesStream=sectionStreams[2];
+		}
 
 		var addRunDataIndex = 0;
 
 		cache.reset(addressesStream);
 
-		var addressesStreamEndOffset = addressesStream.offset;
-		while(instructionsStream.offset<addressesStreamEndOffset){
+		while(instructionsStream.offset<instructionsStreamEndOffset){
 			/*
 			var instructionIndex=instructionsStream.readS8();
 			if(instructionIndex===-1){
@@ -224,10 +270,7 @@ VCDIFF_Parser.prototype.decodeWindowHeader=function(){
 	windowHeader.deltaLength = this.read7BitEncodedInt();
 	windowHeader.targetWindowLength = this.read7BitEncodedInt();
 	windowHeader.deltaIndicator = this.readU8(); // secondary compression: 1=VCD_DATACOMP,2=VCD_INSTCOMP,4=VCD_ADDRCOMP
-	if(windowHeader.deltaIndicator!==0){
-		throw new Error('unimplemented windowHeader.deltaIndicator:'+windowHeader.deltaIndicator);
-	}
-	
+
 	windowHeader.addRunDataLength = this.read7BitEncodedInt();
 	windowHeader.instructionsLength = this.read7BitEncodedInt();
 	windowHeader.addressesLength = this.read7BitEncodedInt();
@@ -262,6 +305,16 @@ const VCD_APPHEADER  = 0x04; // nonstandard?
 const VCD_SOURCE  = 0x01;
 const VCD_TARGET  = 0x02;
 const VCD_ADLER32 = 0x04;
+
+// windowHeader.deltaIndicator bits (xdelta3.c VCD_DATACOMP/VCD_INSTCOMP/VCD_ADDRCOMP)
+const VCD_DATACOMP = 0x01;
+const VCD_INSTCOMP = 0x02;
+const VCD_ADDRCOMP = 0x04;
+
+//secondary compressor ids (xdelta3.c; not IANA-allocated)
+const VCD_DJW_ID  = 1;
+const VCD_LZMA_ID = 2;
+const VCD_FGK_ID  = 16;
 
 
 

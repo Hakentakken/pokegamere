@@ -8,11 +8,11 @@
  * drag/drop wiring are untouched.
  *
  * Interaction is click-and-drag (mouse) or finger-drag (touch): horizontal
- * movement turns the view with the pointer, like turning your head — drag
- * right and you look right, drag left and you look left — around a viewer
- * who never moves. The gesture is only claimed once it is clearly horizontal,
- * so vertical page scrolling and ordinary clicks on the controls are never
- * disturbed.
+ * movement drags the room with the pointer — drag right and the scene slides
+ * right (the view pans left), drag left and it slides left — like pulling a
+ * panorama past a viewer who never moves. The gesture is only claimed once it
+ * is clearly horizontal, so vertical page scrolling and ordinary clicks on
+ * the controls are never disturbed.
  */
 import {
   Component,
@@ -118,6 +118,24 @@ const PatcherRoom = forwardRef<PatcherRoomHandle, Props>(function PatcherRoom(
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!e.isPrimary || e.button !== 0) return;
+    /* Real controls win over the room: when the gesture starts on (or inside)
+       an interactive element — the file inputs, buttons, links, the hack
+       picker's select/labels, anything the page marks as a control — the drag
+       is never tracked, so it can never arm, never capture the pointer and
+       never retarget the click away from the control. Before this guard, a
+       tap/click that drifted ~10px horizontally (very easy on touch) armed the
+       camera, `setPointerCapture` moved the pointerup/click onto the room
+       wrapper, and the control silently swallowed the activation — the
+       intermittent "the 3D room blocks my file inputs" bug. */
+    const target = e.target;
+    if (
+      target instanceof Element &&
+      target.closest(
+        "button, input, select, textarea, a, label, [data-patcher-control]"
+      )
+    ) {
+      return;
+    }
     drag.current = {
       armed: false,
       x0: e.clientX,
@@ -145,18 +163,18 @@ const PatcherRoom = forwardRef<PatcherRoomHandle, Props>(function PatcherRoom(
       setDragging(true);
     }
     if (e.cancelable) e.preventDefault();
-    /* Head-turn mapping: dragging RIGHT turns the view RIGHT.
+    /* Head-turn mapping: the room follows the pointer.
        `bearingOf` is `atan2(-(x - EYE.x), -(z - EYE.z))`, so the left-hand
        station measures a POSITIVE yaw and the right-hand one a negative yaw,
        and with `rotation.y = yaw` the camera's forward vector is
        `(-sin yaw, 0, -cos yaw)` — increasing yaw swings the view LEFT
        (forward.x goes negative) and decreasing yaw swings it RIGHT
-       (forward.x goes positive). A rightward drag (dx > 0) therefore has to
-       SUBTRACT from the yaw it started from: drag right, the view turns
-       right toward the right-hand wall; drag left, the view turns left.
-       Verified: dx=+100px → target decreases → yaw negative → forward.x =
-       -sin(neg) > 0 → looking RIGHT. */
-    ROOM_CAM.target = Math.max(-MAX_YAW, Math.min(MAX_YAW, d.base - dx * sensitivity()));
+       (forward.x goes positive). A rightward drag (dx > 0) must therefore
+       ADD to the yaw it started from: drag right and the scene slides right
+       (the view pans left, following the finger/pointer); drag left and the
+       scene slides left. Subtracting `dx` here is what made every drag feel
+       backwards — mouse and touch alike. */
+    ROOM_CAM.target = Math.max(-MAX_YAW, Math.min(MAX_YAW, d.base + dx * sensitivity()));
   };
 
   const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {

@@ -50,6 +50,7 @@ const RomPatcherWeb = (function () {
 		'modules/RomPatcher.format.ppf.js',
 		'modules/RomPatcher.format.bdf.js',
 		'modules/RomPatcher.format.pmsr.js',
+		'modules/RomPatcher.secondary.lzma.js',
 		'modules/RomPatcher.format.vcdiff.js',
 		'modules/zip.js/zip.min.js',
 		'RomPatcher.js'
