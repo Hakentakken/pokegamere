@@ -19,18 +19,25 @@ type Hack = {
   status: string;
   coverImage: string;
   description: string;
-  /** Supabase `created_at` — ISO timestamp that drives "Sort by Upload Date". */
+  /** Supabase `created_at` — ISO timestamp that drives the "Latest" sort. */
   createdAt: string;
 };
 
 /**
- * Search normalisation — lowercases, collapses every run of whitespace to a
- * single space and trims the ends, so "  Pokemon   GAIA " still matches a
- * stored "Pokemon Gaia". Applied to both the query and the fields, which
- * makes matching case- and whitespace-tolerant on either side.
+ * Search normalisation — NFD-decomposes and strips combining marks so "é"
+ * and "e" match each other, lowercases, collapses every run of whitespace to
+ * a single space and trims the ends, so "  PokéMon   GAIA " still matches a
+ * stored "Pokemon Gaia". Applied to both the query and the fields and matched
+ * with `includes`, so matching is case-, accent- and whitespace-tolerant
+ * anywhere inside a word or a sentence, on either side.
  */
 const normalize = (value: string | null | undefined) =>
-  (value || "").toLowerCase().replace(/\s+/g, " ").trim();
+  (value || "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 
 /**
  * Upload time in epoch ms — missing or unparseable timestamps fall back to 0,
@@ -215,7 +222,7 @@ export default function Hacks() {
           >
             <option value="name">Sort by Name</option>
             <option value="rating">Sort by Rating</option>
-            <option value="date">Sort by Upload Date</option>
+            <option value="date">Latest</option>
           </select>
 
           <span
