@@ -19,7 +19,7 @@ type Hack = {
   status: string;
   coverImage: string;
   description: string;
-  /** Supabase `created_at` — ISO timestamp that drives the "Latest" sort. */
+  /** Supabase `created_at` — ISO timestamp that drives the "Sort by Latest" option. */
   createdAt: string;
 };
 
@@ -222,7 +222,7 @@ export default function Hacks() {
           >
             <option value="name">Sort by Name</option>
             <option value="rating">Sort by Rating</option>
-            <option value="date">Latest</option>
+            <option value="date">Sort by Latest</option>
           </select>
 
           <span
