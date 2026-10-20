@@ -5,25 +5,40 @@
 // This guarantees every <loc> is crawlable with real data and no fabricated
 // lastmod: static routes carry no lastmod at all, hack routes carry the row's
 // real created_at.
-import { readFileSync, writeFileSync } from 'node:fs'
+//
+// Env loading: read VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY from
+// process.env first (Vercel dashboard / CI), falling back to a local `.env`
+// file for workstation builds. A missing `.env` file must NOT crash the
+// script — on Vercel there is intentionally no `.env` file (gitignored).
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 
-const env = Object.fromEntries(
-  readFileSync(path.join(root, '.env'), 'utf8')
-    .split(/\r?\n/)
-    .filter((l) => l.includes('=') && !l.trim().startsWith('#'))
-    .map((l) => {
-      const i = l.indexOf('=')
-      return [l.slice(0, i).trim(), l.slice(i + 1).trim()]
-    })
-)
+function loadLocalEnvFile() {
+  const envPath = path.join(root, '.env')
+  if (!existsSync(envPath)) return {}
+  try {
+    return Object.fromEntries(
+      readFileSync(envPath, 'utf8')
+        .split(/\r?\n/)
+        .filter((l) => l.includes('=') && !l.trim().startsWith('#'))
+        .map((l) => {
+          const i = l.indexOf('=')
+          return [l.slice(0, i).trim(), l.slice(i + 1).trim()]
+        })
+    )
+  } catch {
+    return {}
+  }
+}
 
-const SB_URL = env.VITE_SUPABASE_URL
-const SB_KEY = env.VITE_SUPABASE_ANON_KEY
+const fileEnv = loadLocalEnvFile()
+
+const SB_URL = process.env.VITE_SUPABASE_URL || fileEnv.VITE_SUPABASE_URL
+const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY || fileEnv.VITE_SUPABASE_ANON_KEY
 
 // --- slug logic: mirror of src/lib/slug.ts (keep in sync) ---
 function shortId(id) {
@@ -79,6 +94,22 @@ function xmlEscape(s) {
 }
 
 async function main() {
+  if (!SB_URL || !SB_KEY) {
+    const missing = [
+      !SB_URL ? 'VITE_SUPABASE_URL' : null,
+      !SB_KEY ? 'VITE_SUPABASE_ANON_KEY' : null,
+    ]
+      .filter(Boolean)
+      .join(', ')
+    throw new Error(
+      'build-sitemap: missing required environment variable(s): ' +
+        missing +
+        '. Configure them in Vercel → Project Settings → Environment Variables ' +
+        '(Production), or add them to a local `.env` file (see `.env.example`). ' +
+        'No credentials are logged. Refusing to reuse stale sitemap files.'
+    )
+  }
+
   const commonHeaders = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
 
   const hacks = await fetchJson(SB_URL + '/rest/v1/hacks?select=id,title,created_at&order=created_at.asc', commonHeaders)
@@ -120,3 +151,4 @@ main().catch((err) => {
   console.error(err)
   process.exit(1)
 })
+
