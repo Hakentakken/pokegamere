@@ -4,6 +4,7 @@ import Atmosphere from "../components/Atmosphere";
 import SplitHeading from "../components/SplitHeading";
 import Reveal from "../components/Reveal";
 import { DUR, EASE } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 const SUGGESTIONS = [
   { to: "/hacks", label: "ROM Hacks" },
@@ -13,6 +14,10 @@ const SUGGESTIONS = [
 ];
 
 export default function NotFound() {
+  useSeo({
+    title: "Page not found",
+    robots: "noindex, nofollow",
+  });
   return (
     <div className="relative flex min-h-[75svh] flex-col items-center justify-center overflow-hidden px-6 text-center">
       <Atmosphere tone="hero" grid={false} />

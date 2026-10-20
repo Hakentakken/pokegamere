@@ -2,6 +2,7 @@ import PageWrapper from "../components/PageWrapper";
 import PageHero from "../components/PageHero";
 import LegalSections, { type LegalSection } from "../components/LegalSections";
 import Reveal from "../components/Reveal";
+import { useSeo } from "../lib/seo";
 
 const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
 
@@ -94,6 +95,11 @@ const SECTIONS: LegalSection[] = [
  * confirmed by qualified counsel before being relied on.
  */
 export default function Terms() {
+  useSeo({
+    title: "Terms & Disclaimer",
+    description: "The plain-language version of how this project works, what it hosts, and what it does not.",
+    canonicalPath: "/terms",
+  });
   return (
     <PageWrapper>
       <PageHero

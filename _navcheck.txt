@@ -1,0 +1,63 @@
+﻿Admin.tsx:370 : onClick={async () => {
+Admin.tsx:385 : onClick={() => setActiveTab(tab)}
+Admin.tsx:494 : <button onClick={() => setEditFeatures([...editFeatures, ""])}
+Admin.tsx:517 : <button onClick={() => removeAt(editScreenshots, setEditScreenshots, i)}
+Admin.tsx:523 : <button onClick={() => setEditScreenshots([...editScreenshots, ""])}
+Admin.tsx:529 : <button onClick={saveEdit} className={btnCls}>Save Changes</button>
+Admin.tsx:530 : <button onClick={() => setEditingHack(null)}
+Admin.tsx:574 : <button onClick={() => openEdit(h)}
+Admin.tsx:578 : <button onClick={() => deleteItem("hacks", h.id)}
+Admin.tsx:662 : <button onClick={() => setFeatures([...features, ""])}
+Admin.tsx:685 : <button onClick={() => removeAt(screenshots, setScreenshots, i)}
+Admin.tsx:691 : <button onClick={() => setScreenshots([...screenshots, ""])}
+Admin.tsx:696 : <button onClick={uploadHack} className={`${btnCls} mt-6 w-full`}>
+Admin.tsx:719 : <button onClick={() => deleteItem("cheats", c.id)}
+Admin.tsx:744 : <button onClick={addCheat} className={`${btnCls} mt-6 w-full`}>
+Admin.tsx:779 : <button onClick={() => deleteItem("emulators", e.id)}
+Admin.tsx:800 : <button onClick={addEmu} className={`${btnCls} mt-6 w-full`}>
+BackToTop.tsx:21 : onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+Cheats.tsx:114 : onClick={() => handleCopy(c)}
+DetailHero.tsx:129 : <button onClick={onDownload} className="btn-hero w-full group">
+DownloadBand.tsx:84 : <button onClick={onDownload} className="btn-hero group">
+FeaturedBand.tsx:151 : onClick={() => nudge(-1)}
+FeaturedBand.tsx:162 : onClick={() => nudge(1)}
+HackDetail.tsx:1 : import { Link, useNavigate, useParams } from "react-router-dom";
+HackDetail.tsx:1 : import { Link, useNavigate, useParams } from "react-router-dom";
+HackDetail.tsx:24 : const navigate = useNavigate();
+HackDetail.tsx:24 : const navigate = useNavigate();
+HackDetail.tsx:32 : // the user navigates between detail pages quickly.
+HackDetail.tsx:81 : navigate(`/hacks/${canonical}`, { replace: true });
+Hacks.tsx:194 : onClick={clearSearch}
+Hacks.tsx:265 : onClick={clearSearch}
+Lightbox.tsx:100 : onClick: () => void;
+Lightbox.tsx:105 : onClick={onClick}
+Lightbox.tsx:54 : onClick={onClose}
+Lightbox.tsx:58 : onClick={onClose}
+Lightbox.tsx:71 : onClick={(e) => e.stopPropagation()}
+Lightbox.tsx:82 : <div className="flex items-center gap-4" onClick={(e) => e.stopPropagation()}>
+Lightbox.tsx:83 : <NavButton side="left" onClick={() => onIndex((active - 1 + count) % count)} label="Previous screenshot" />
+Lightbox.tsx:87 : <NavButton side="right" onClick={() => onIndex((active + 1) % count)} label="Next screenshot" />
+Lightbox.tsx:96 : onClick,
+Login.tsx:93 : onClick={handleLogin}
+MobileMenu.tsx:112 : onClick={onClose}
+MobileMenu.tsx:120 : onClick={onClose}
+MobileMenu.tsx:50 : onClick={onClose}
+MobileMenu.tsx:69 : onClick={onClose}
+MobileMenu.tsx:92 : onClick={onClose}
+Navbar.tsx:100 : onClick={() => setMenuOpen(true)}
+Patcher.tsx:2 : import { Link, useNavigate } from "react-router-dom";
+Patcher.tsx:2 : import { Link, useNavigate } from "react-router-dom";
+Patcher.tsx:392 : onClick={() => window.open(selectedHack.download_link!, "_blank", "noopener")}
+Patcher.tsx:424 : onClick={() => lookAtStation(station)}
+QA.tsx:36 : onClick={() => setCategory(cat)}
+QA.tsx:72 : onClick={() => toggle(faq.id)}
+ScreenshotGallery.tsx:101 : onClick={() => setActive(i)}
+ScreenshotGallery.tsx:143 : function StageArrow({ side, onClick }: { side: "left" | "right"; onClick: () => void }) {
+ScreenshotGallery.tsx:146 : onClick={onClick}
+ScreenshotGallery.tsx:46 : onClick={() => setLightbox(true)}
+ScreenshotGallery.tsx:80 : <StageArrow side="left" onClick={() => go(-1)} />
+ScreenshotGallery.tsx:81 : <StageArrow side="right" onClick={() => go(1)} />
+SectionHeader.tsx:100 : onClick,
+SectionHeader.tsx:103 : onClick?: () => void;
+SectionHeader.tsx:108 : onClick={onClick}
+ThemeToggle.tsx:24 : onClick={onToggle}

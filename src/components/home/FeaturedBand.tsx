@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import FeaturedHack, { type HackRecord } from "../FeaturedHack";
 import HackCard from "../HackCard";
 import SectionHeader from "../SectionHeader";
@@ -27,7 +27,6 @@ const TOLERANCE = 4;
  * arrows switch off at the ends instead of silently doing nothing.
  */
 export default function FeaturedBand({ hacks, loading }: Props) {
-  const navigate = useNavigate();
   const railRef = useRef<HTMLDivElement>(null);
   const { reduced } = useMotionPrefs();
 
@@ -101,8 +100,8 @@ export default function FeaturedBand({ hacks, loading }: Props) {
           title="Start with a standout"
           lede="One hack gets the full spotlight. The rest are one swipe away."
           action={
-            <button
-              onClick={() => navigate("/hacks")}
+            <Link
+              to="/hacks"
               className="group inline-flex items-center gap-2 text-sm font-medium text-neutral-400 transition-colors duration-300 hover:text-white"
             >
               <span className="link-underline">All hacks</span>
@@ -112,7 +111,7 @@ export default function FeaturedBand({ hacks, loading }: Props) {
               >
                 →
               </span>
-            </button>
+            </Link>
           }
         />
 

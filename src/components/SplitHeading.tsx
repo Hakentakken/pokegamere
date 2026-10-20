@@ -25,7 +25,14 @@ type Props = {
  *
  * Screen readers get the plain string via `aria-label` + `sr-only`, and the
  * animated copy is `aria-hidden`, so the heading is announced once, correctly.
+ *
+ * Written for long ROM-hack names: a title is never cut, wrapped words may break
+ * anywhere so an unbroken token cannot push the heading sideways, and the stagger
+ * stops growing after a handful of words so a 90-character name does not spend
+ * several seconds revealing itself.
  */
+const STAGGER_CAP = 8;
+
 export default function SplitHeading({
   text,
   as: Tag = "h2",
@@ -63,13 +70,13 @@ export default function SplitHeading({
   return (
     <Tag className={className} aria-label={sub ? `${text} ${sub}` : text}>
       <span className="sr-only">{sub ? `${text} ${sub}` : text}</span>
-      <span aria-hidden="true" className="inline">
+      <span aria-hidden="true" className="inline [overflow-wrap:anywhere]">
         {words.map((word, i) => (
           <span
             key={`${word}-${i}`}
             className="-mb-[0.12em] inline-block overflow-hidden pb-[0.12em] align-bottom"
           >
-            <motion.span className="inline-block will-change-transform" {...reveal(i * stagger)}>
+            <motion.span className="inline-block will-change-transform" {...reveal(Math.min(i, STAGGER_CAP) * stagger)}>
               {word}
               {i < words.length - 1 ? "\u00A0" : ""}
             </motion.span>
@@ -80,7 +87,7 @@ export default function SplitHeading({
       {sub && (
         <span aria-hidden="true" className={`mt-2 block ${subClassName}`}>
           <span className="-mb-[0.12em] inline-block overflow-hidden pb-[0.12em] align-bottom">
-            <motion.span className="inline-block will-change-transform" {...reveal(words.length * stagger)}>
+            <motion.span className="inline-block will-change-transform" {...reveal(Math.min(words.length, STAGGER_CAP + 1) * stagger)}>
               {sub}
             </motion.span>
           </span>

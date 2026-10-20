@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import CoverImage from "../CoverImage";
 import Parallax from "../Parallax";
-import { useMotionPrefs } from "../../lib/motion";
+import { useMotionPrefs, useNarrow } from "../../lib/motion";
 
 type Props = {
   /** Already-normalised cover URLs (empty is fine — the hero simply has no art). */
@@ -27,6 +27,11 @@ const LAYOUT = [
  */
 export default function HeroArt({ covers }: Props) {
   const { reduced, coarse } = useMotionPrefs();
+  // `lg` is 1024px. Exactly one composition is mounted at a time, so the same
+  // cover art is never requested twice — previously the desktop fan and the
+  // mobile backdrop both existed in the DOM and relied on `display:none` to
+  // keep one of them from downloading too.
+  const wide = !useNarrow(1024);
   const cards = covers.slice(0, 3);
 
   if (cards.length === 0) return null;
@@ -34,6 +39,7 @@ export default function HeroArt({ covers }: Props) {
   return (
     <>
       {/* DESKTOP — layered fan */}
+      {wide && (
       <Parallax
         distance={reduced ? 0 : 46}
         depth={coarse ? 0 : 18}
@@ -68,8 +74,10 @@ export default function HeroArt({ covers }: Props) {
           })}
         </div>
       </Parallax>
+      )}
 
       {/* MOBILE — soft backdrop behind the copy */}
+      {!wide && (
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-0 lg:hidden">
         <div className="mask-radial absolute -top-16 right-[-30%] h-[24rem] w-[24rem] opacity-40 blur-[3px]">
           <div className="relative h-full w-full">
@@ -88,6 +96,7 @@ export default function HeroArt({ covers }: Props) {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }

@@ -6,13 +6,22 @@ import PageHero from "../components/PageHero";
 import Skeleton from "../components/Skeleton";
 import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 export default function Emulators() {
+  useSeo({
+    title: "Pokémon Emulators",
+    description: "Everything you need to run your patched Pokémon adventures on any device.",
+    canonicalPath: "/emulators",
+  });
   const [emulators, setEmulators] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchEmulators = async () => {
-    const { data } = await supabase.from("emulators").select("*");
+    // Explicit columns — this table has no `download_link` (see Admin.tsx).
+    const { data } = await supabase
+      .from("emulators")
+      .select("id, created_at, name, platform, description");
     setEmulators(data || []);
     setLoading(false);
   };

@@ -3,8 +3,13 @@ import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import Atmosphere from "../components/Atmosphere";
 import { DUR, EASE } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 export default function Login() {
+  useSeo({
+    title: "Admin Login",
+    robots: "noindex, nofollow",
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

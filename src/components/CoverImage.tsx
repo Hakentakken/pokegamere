@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { COVER_PLACEHOLDER, normalizeImageUrl } from "../lib/imageUrl";
+import { COVER_PLACEHOLDER, IMAGE_WIDTH, resolveImageUrl } from "../lib/imageUrl";
 
 type Props = {
   /** Raw value from the database or the admin input (any supported URL shape). */
@@ -24,7 +24,9 @@ type Props = {
 /**
  * The one place cover art is rendered.
  *
- * - Drive / Supabase / plain URLs are all normalised by `normalizeImageUrl`.
+ * - Drive / Supabase / plain URLs are all normalised by `normalizeImageUrl`
+ *   and, for Supabase Storage, resized at the edge to `IMAGE_WIDTH.cover` so
+ *   the same cover is one cached request no matter which component draws it.
  * - A missing or broken link degrades to the bundled placeholder, never to a
  *   broken-image icon.
  * - Images fade and settle in instead of popping, and the box keeps its
@@ -43,7 +45,7 @@ export default function CoverImage({
 }: Props) {
   const [loaded, setLoaded] = useState(false);
 
-  const resolved = normalizeImageUrl(src) || COVER_PLACEHOLDER;
+  const resolved = resolveImageUrl(src, { width: IMAGE_WIDTH.cover }) || COVER_PLACEHOLDER;
 
   return (
     <div className={`relative overflow-hidden ${className}`}>

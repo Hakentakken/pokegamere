@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "framer-motion";
 import { EASE } from "../../lib/motion";
@@ -19,7 +19,6 @@ const STAT_LABELS: { key: keyof NonNullable<Stats>; label: string }[] = [
  * with it. Skipped entirely under reduced motion.
  */
 export default function HeroCopy({ stats }: { stats?: Stats }) {
-  const navigate = useNavigate();
   const reduced = useReducedMotion();
   const from = (delay: number, distance = 18) =>
     reduced
@@ -77,7 +76,7 @@ export default function HeroCopy({ stats }: { stats?: Stats }) {
       </motion.p>
 
       <motion.div {...from(0.85)} className="mt-9 flex flex-wrap gap-3">
-        <button onClick={() => navigate("/hacks")} className="btn-hero group">
+        <Link to="/hacks" className="btn-hero group">
           Browse ROM Hacks
           <svg
             width="15"
@@ -95,10 +94,10 @@ export default function HeroCopy({ stats }: { stats?: Stats }) {
               strokeLinejoin="round"
             />
           </svg>
-        </button>
-        <button onClick={() => navigate("/patcher")} className="btn-hero-ghost">
+        </Link>
+        <Link to="/patcher" className="btn-hero-ghost">
           ROM Patcher
-        </button>
+        </Link>
       </motion.div>
 
       {stats && (

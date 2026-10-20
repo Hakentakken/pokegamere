@@ -7,6 +7,7 @@ import PageHero from "../components/PageHero";
 import Skeleton from "../components/Skeleton";
 import CtaBand from "../components/CtaBand";
 import { supabase } from "../lib/supabase";
+import { useSeo } from "../lib/seo";
 import { DUR, EASE } from "../lib/motion";
 
 type Hack = {
@@ -60,6 +61,12 @@ const uploadTime = (hack: Hack) => {
  * description, author, platform, status) as the visitor types.
  */
 export default function Hacks() {
+  useSeo({
+    title: "Browse Pokémon ROM Hacks",
+    description:
+      "Browse the full catalogue of fan-made Pokémon ROM hacks by base game, rating and release date.",
+    canonicalPath: "/hacks",
+  });
   const [hacks, setHacks] = useState<Hack[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
@@ -75,7 +82,11 @@ export default function Hacks() {
   };
 
   const fetchHacks = async () => {
-    const { data, error } = await supabase.from("hacks").select("*");
+    // Only the columns this list renders. `screenshots` and `features` are by
+    // far the heaviest fields in `hacks` and are needed by the detail page only.
+    const { data, error } = await supabase
+      .from("hacks")
+      .select("id, created_at, title, author, description, base_game, platform, status, rating, cover_image");
 
     setLoading(false);
     if (error) {

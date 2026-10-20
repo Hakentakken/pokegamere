@@ -1,4 +1,4 @@
-import { isRenderableImageRef, stripUrlArtifacts } from "./imageUrl";
+import { isImageRef, isRenderableImageRef, stripUrlArtifacts } from "./imageUrl";
 
 /**
  * Decoder for the list-shaped text columns in Supabase (`hacks.screenshots`,
@@ -124,7 +124,19 @@ export function parseTextList(value: unknown): string[] {
  * left over from corrupt rows is dropped instead of rendering a broken tile.
  */
 export function parseImageList(value: unknown): string[] {
-  return parseTextList(value).filter((entry) => isRenderableImageRef(entry));
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const entry of parseTextList(value)) {
+    // Page links must never become tiles, and repeats are dropped so the same
+    // picture is not requested twice — one legacy row stores its screenshots
+    // once inside a markdown blob and then again after it.
+    if (!isImageRef(entry) || seen.has(entry)) continue;
+    seen.add(entry);
+    urls.push(entry);
+  }
+
+  return urls;
 }
 
 /**
@@ -152,7 +164,7 @@ export function splitImageUrlInput(urls: string[]): { valid: string[]; invalid: 
   for (const url of urls || []) {
     const trimmed = String(url ?? "").trim();
     if (!trimmed) continue;
-    (isRenderableImageRef(trimmed) ? valid : invalid).push(trimmed);
+    (isImageRef(trimmed) ? valid : invalid).push(trimmed);
   }
 
   return { valid, invalid };

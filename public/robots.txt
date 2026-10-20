@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /login
+
+Sitemap: https://pokesmith.com/sitemap.xml
+Sitemap: https://pokesmith.com/sitemap-hacks.xml

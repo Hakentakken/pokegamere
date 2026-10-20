@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import SectionHeader from "../SectionHeader";
 import Skeleton from "../Skeleton";
@@ -21,7 +21,9 @@ type Props = {
  * hero-sized background word sits behind everything as pure texture.
  */
 export default function CategoryBand({ categories, loading }: Props) {
-  const navigate = useNavigate();
+  // A real <a> (via Link) so crawlers can reach the filtered views; the motion
+  // wrapper keeps the exact entrance animation the button used to have.
+  const MotionLink = motion.create(Link);
 
   return (
     <section className="relative isolate overflow-hidden border-t border-white/10">
@@ -48,9 +50,9 @@ export default function CategoryBand({ categories, loading }: Props) {
         ) : (
           <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {categories.map((category, i) => (
-              <motion.button
+              <MotionLink
                 key={category.name}
-                onClick={() => navigate(`/hacks?base=${encodeURIComponent(category.name)}`)}
+                to={`/hacks?base=${encodeURIComponent(category.name)}`}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "0px 0px -10% 0px" }}
@@ -82,7 +84,7 @@ export default function CategoryBand({ categories, loading }: Props) {
                     </svg>
                   </span>
                 </span>
-              </motion.button>
+              </MotionLink>
             ))}
           </div>
         )}

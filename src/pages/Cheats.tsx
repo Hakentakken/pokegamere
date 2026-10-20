@@ -6,15 +6,23 @@ import PageHero from "../components/PageHero";
 import Skeleton from "../components/Skeleton";
 import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 export default function Cheats() {
+  useSeo({
+    title: "Pokémon Cheat Codes",
+    description: "Search any game, copy a cheat code, and jump straight back into the action.",
+    canonicalPath: "/cheats",
+  });
   const [cheats, setCheats] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCheats = async () => {
-    const { data } = await supabase.from("cheats").select("*");
+    const { data } = await supabase
+      .from("cheats")
+      .select("id, created_at, title, game, code, description");
     setCheats(data || []);
     setLoading(false);
   };

@@ -35,6 +35,9 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Home />} />
             <Route path="/hacks" element={<Hacks />} />
+            {/* Canonical hack detail URL: readable slug, resolved to the DB id at runtime. */}
+            <Route path="/hacks/:slug" element={<HackDetail />} />
+            {/* Legacy UUID URLs — still work, and redirect to the canonical slug. */}
             <Route path="/hack/:id" element={<HackDetail />} />
             <Route path="/cheats" element={<Cheats />} />
             <Route path="/emulators" element={<Emulators />} />

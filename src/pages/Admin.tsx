@@ -7,8 +7,13 @@ import Screenshot from "../components/Screenshot";
 import { parseTextList, serializeImageList, splitImageUrlInput } from "../lib/imageList";
 import { DRIVE_PUBLIC_HINT, isRenderableImageRef } from "../lib/imageUrl";
 import { SPRING } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 export default function Admin() {
+  useSeo({
+    title: "Admin",
+    robots: "noindex, nofollow",
+  });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("hack");
 
@@ -52,12 +57,14 @@ export default function Admin() {
   const [cheatDesc, setCheatDesc] = useState("");
 
   // 🎮 EMULATOR
+  //
+  // The live `emulators` table is `id, name, platform, description, created_at`
+  // and has no `download_link` column. The schema is not ours to change, so no
+  // link is collected or written here — the previous code probed that missing
+  // column on every mount, which always failed with `42703`.
   const [emuName, setEmuName] = useState("");
   const [emuPlatform, setEmuPlatform] = useState("");
   const [emuDesc, setEmuDesc] = useState("");
-  const [emuLink, setEmuLink] = useState("");
-  // 🔎 does `emulators.download_link` exist in the DB? (probed on mount)
-  const [hasEmuLinkCol, setHasEmuLinkCol] = useState(true);
 
   // 🔐 AUTH
   useEffect(() => {
@@ -66,9 +73,6 @@ export default function Admin() {
       if (!data.user) {
         window.location.href = "/login";
       } else {
-        // probe optional column so a missing column never breaks the insert
-        const { error } = await supabase.from("emulators").select("download_link").limit(1);
-        setHasEmuLinkCol(!error);
         fetchAll();
         setLoading(false);
       }
@@ -77,13 +81,22 @@ export default function Admin() {
   }, []);
 
   // 📦 FETCH
+  //
+  // Explicit column lists, each verified against the live schema. `select("*")`
+  // was pulling every column of every hack — including the entire `screenshots`
+  // payload — into a table that only renders a handful of fields.
+  const HACK_COLUMNS =
+    "id, created_at, title, author, description, base_game, platform, status, rating, cover_image, download_link, screenshots, features";
+  const CHEAT_COLUMNS = "id, created_at, title, game, code, description";
+  const EMULATOR_COLUMNS = "id, created_at, name, platform, description";
+
   const fetchAll = async () => {
     const { data: hacksData } = await supabase
       .from("hacks")
-      .select("*")
+      .select(HACK_COLUMNS)
       .order("created_at", { ascending: false });
-    const { data: cheatsData } = await supabase.from("cheats").select("*");
-    const { data: emuData } = await supabase.from("emulators").select("*");
+    const { data: cheatsData } = await supabase.from("cheats").select(CHEAT_COLUMNS);
+    const { data: emuData } = await supabase.from("emulators").select(EMULATOR_COLUMNS);
     setHacks(hacksData || []);
     setCheats(cheatsData || []);
     setEmulators(emuData || []);
@@ -312,16 +325,15 @@ export default function Admin() {
 
   // 🎮 ADD EMULATOR
   const addEmu = async () => {
-    const payload: Record<string, unknown> = {
+    // Only the columns that exist are written.
+    const { error } = await supabase.from("emulators").insert({
       name: emuName,
       platform: emuPlatform,
       description: emuDesc,
-    };
-    if (hasEmuLinkCol) payload.download_link = emuLink;
-    const { error } = await supabase.from("emulators").insert(payload);
+    });
     if (error) { alert("Failed ❌"); return; }
     alert("Emulator added ✅");
-    setEmuName(""); setEmuPlatform(""); setEmuDesc(""); setEmuLink("");
+    setEmuName(""); setEmuPlatform(""); setEmuDesc("");
     fetchAll();
   };
 
@@ -745,7 +757,19 @@ export default function Admin() {
         {activeTab === "emulator" && (
           <>
             <h2 className="mb-4 font-display text-xl font-bold text-white">Existing Emulators ({emulators.length})</h2>
-            {emulators.length === 0 && <p className="mb-4 text-neutral-500">No emulators yet.</p>}
+            {/* Explicit zero-row state: the table ships empty, so say so plainly
+                rather than rendering an unexplained blank list. */}
+            {emulators.length === 0 && (
+              <div className="panel mb-6 flex flex-col items-center gap-3 px-6 py-12 text-center">
+                <span className="text-3xl" aria-hidden="true">
+                  🚧
+                </span>
+                <p className="text-neutral-400">
+                  No emulators yet — add the first one below and it will appear on the
+                  <span className="font-medium text-neutral-200"> Emulators</span> page straight away.
+                </p>
+              </div>
+            )}
             {emulators.map((e) => (
               <div key={e.id} className="glass group mb-3 flex flex-wrap items-start justify-between gap-4 rounded-xl p-4 transition-[border-color,background-color] duration-300 hover:border-white/20 hover:bg-white/[0.04]">
                 <div className="min-w-0">
@@ -777,23 +801,6 @@ export default function Admin() {
               <label className={labelCls}>Description</label>
               <textarea value={emuDesc} placeholder="Describe the emulator..."
                 onChange={(e) => setEmuDesc(e.target.value)} rows={3} className={inputCls} />
-
-              {hasEmuLinkCol ? (
-                <>
-                  <label className={labelCls}>Download Link</label>
-                  <input value={emuLink} placeholder="https://..."
-                    onChange={(e) => setEmuLink(e.target.value)} className={inputCls} />
-                </>
-              ) : (
-                <p className="text-yellow-500 text-sm mt-4">
-                  ⚠️ The <code>emulators</code> table has no <code>download_link</code> column yet,
-                  so the link is not saved. Run this in the Supabase SQL Editor to enable it:
-                  <br />
-                  <code className="text-gray-300">
-                    alter table public.emulators add column if not exists download_link text;
-                  </code>
-                </p>
-              )}
 
               <button onClick={addEmu} className={`${btnCls} mt-6 w-full`}>
                 Add Emulator

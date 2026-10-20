@@ -5,11 +5,17 @@ import PageWrapper from "../components/PageWrapper";
 import PageHero from "../components/PageHero";
 import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
+import { useSeo } from "../lib/seo";
 
 const CATEGORIES = ["All", "Getting Started", "Patching", "Emulators", "Cheats"];
 
 export default function QA() {
   const [activeId, setActiveId] = useState<number | null>(null);
+  useSeo({
+    title: "Q&A — Patching, Emulators & Cheats",
+    description: "Getting started, patching, emulators and cheats — everything you need to know.",
+    canonicalPath: "/qa",
+  });
   const [category, setCategory] = useState("All");
   const reduceMotion = useReducedMotion();
 

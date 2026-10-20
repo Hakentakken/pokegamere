@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import PageWrapper from "../components/PageWrapper";
 import HackCard from "../components/HackCard";
@@ -9,45 +9,118 @@ import DetailHero from "../components/hack/DetailHero";
 import ScreenshotGallery from "../components/ScreenshotGallery";
 import DownloadBand from "../components/hack/DownloadBand";
 import { parseImageList, parseTextList } from "../lib/imageList";
+import { getHackSlugIndex, resolveHackSlug } from "../lib/hackSlugs";
+import { shortId, slugify } from "../lib/slug";
+import { useSeo } from "../lib/seo";
 
 const HOW_TO_PLAY = ["Download base ROM", "Download patch", "Use patcher tool", "Run in emulator"];
 
+/** UUID v4 shape — tells the two route styles apart without a second fetch. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function HackDetail() {
-  const { id } = useParams();
+  // `/hacks/:slug` supplies `slug`; legacy `/hack/:id` supplies `id` (a UUID).
+  const { slug, id } = useParams();
   const [hack, setHack] = useState<any>(null);
+  const [canonicalSlug, setCanonicalSlug] = useState<string | null>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
+  // Guards against a slow fetch for one hack painting over the next one when
+  // the user navigates between detail pages quickly.
+  const requestId = useRef(0);
+
   useEffect(() => {
-    fetchHack();
-  }, [id]);
+    void fetchHack();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, id]);
 
   const fetchHack = async () => {
+    const request = ++requestId.current;
+    setLoading(true);
+    setHack(null);
     try {
+      let recordId: string | null = null;
+
+      if (slug) {
+        // Canonical route: resolve the slug against the title index.
+        recordId = await resolveHackSlug(slug);
+      } else if (id) {
+        // Legacy UUID route: use the id directly, then hand off to the slug URL.
+        recordId = UUID_RE.test(id) ? id : await resolveHackSlug(id);
+      }
+      if (!recordId) return;
+
       const { data, error } = await supabase
         .from("hacks")
-        .select("*")
-        .eq("id", id)
+        .select(
+          "id, created_at, title, author, description, base_game, platform, status, rating, cover_image, download_link, screenshots, features"
+        )
+        .eq("id", recordId)
         .single();
 
       if (error) throw error;
+      if (request !== requestId.current) return; // superseded by a newer navigation
+
+      // Canonical slug for this record — from the shared index, so it always
+      // matches what the listing pages link to (including collision suffixes).
+      let canonical: string;
+      try {
+        canonical = (await getHackSlugIndex()).get(String(data.id))!;
+      } catch {
+        canonical = slugify(data.title) || `hack-${shortId(String(data.id))}`;
+      }
+      if (!canonical) canonical = slugify(data.title) || `hack-${shortId(String(data.id))}`;
+
+      // Old UUID URLs (and non-canonical slug spellings) become a client-side
+      // permanent redirect: `replace` keeps the history clean, and the
+      // canonical <link> set below tells crawlers the preferred URL.
+      if (canonical !== slug) {
+        window.location.href = `/hacks/${canonical}`;
+        return;
+      }
 
       setHack(data);
+      setCanonicalSlug(canonical);
 
       const { data: relatedData } = await supabase
         .from("hacks")
-        .select("*")
-        .neq("id", id)
+        .select("id, created_at, title, author, description, base_game, platform, status, rating, cover_image")
+        .neq("id", recordId)
         .limit(3);
 
       setRelated(relatedData || []);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
+
+  // SEO — accurate values only: the record's own title/description, and the
+  // canonical slug URL. A missing record is noindexed, never described.
+  useSeo({
+    title: hack
+      ? `${hack.title} — Pokémon ${hack.platform || "ROM"} Hack`
+      : loading
+        ? "Loading…"
+        : "Hack not found",
+    description: hack?.description || undefined,
+    canonicalPath: canonicalSlug ? `/hacks/${canonicalSlug}` : undefined,
+    robots: hack ? "index, follow" : "noindex, nofollow",
+    jsonLd: hack
+      ? {
+          "@context": "https://schema.org",
+          "@type": "VideoGame",
+          name: hack.title,
+          author: hack.author ? { "@type": "Person", name: hack.author } : undefined,
+          description: hack.description || undefined,
+          gamePlatform: hack.platform || undefined,
+          url: canonicalSlug ? `https://pokesmith.com/hacks/${canonicalSlug}` : undefined,
+        }
+      : undefined,
+  });
 
   // ✅ NEW DOWNLOAD HANDLER (safe)
   const handleDownload = (link: string) => {

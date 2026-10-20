@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Parallax from "./Parallax";
 import Reveal from "./Reveal";
@@ -9,6 +9,8 @@ import { DUR, EASE, stagger } from "../lib/motion";
 
 export type HackRecord = {
   id: string;
+  /** Canonical URL slug (`/hacks/<slug>`) when known. */
+  slug?: string;
   title: string;
   author: string;
   rating: number;
@@ -36,7 +38,7 @@ const FIELDS = ["Base", "Platform", "Status", "Rating"];
  * the section passes.
  */
 export default function FeaturedHack({ hack, index = "01 — Featured" }: Props) {
-  const navigate = useNavigate();
+  const to = hack.slug ? `/hacks/${hack.slug}` : `/hack/${hack.id}`;
   const values = [hack.baseGame, hack.platform, hack.status, `${hack.rating || 0} / 5`];
 
   return (
@@ -113,15 +115,15 @@ export default function FeaturedHack({ hack, index = "01 — Featured" }: Props)
 
         <Reveal as="up" delay={0.42}>
           <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => navigate(`/hack/${hack.id}`)} className="btn-hero group">
+            <Link to={to} className="btn-hero group">
               View this hack
               <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">
                 <path d="M2 7h10M8.5 3.5 12 7l-3.5 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
-            <button onClick={() => navigate("/patcher")} className="btn-hero-ghost">
+            </Link>
+            <Link to="/patcher" className="btn-hero-ghost">
               ROM Patcher
-            </button>
+            </Link>
           </div>
         </Reveal>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import PageWrapper from "../components/PageWrapper";
+import { useSeo } from "../lib/seo";
 import Marquee from "../components/Marquee";
 import CtaBand from "../components/CtaBand";
 import Hero from "../components/home/Hero";
@@ -33,6 +34,18 @@ const TICKER = [
  * simply omits those bands if they fail.
  */
 export default function Home() {
+  useSeo({
+    title: "Pokémon ROM Hacks, Cheats & Emulators",
+    description:
+      "Discover fan-made Pokémon ROM hacks, cheats and emulators, patch games and start playing.",
+    canonicalPath: "/",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "PokéSmith",
+      url: "https://pokesmith.com/",
+    },
+  });
   const [latestHacks, setLatestHacks] = useState<HackRecord[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stats, setStats] = useState<Stats>(null);
@@ -41,7 +54,7 @@ export default function Home() {
   const fetchLatest = async () => {
     const { data, error } = await supabase
       .from("hacks")
-      .select("*")
+      .select("id, created_at, title, author, description, base_game, platform, status, rating, cover_image")
       .order("created_at", { ascending: false })
       .limit(4);
 

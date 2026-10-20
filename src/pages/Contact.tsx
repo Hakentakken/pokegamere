@@ -2,6 +2,7 @@ import PageWrapper from "../components/PageWrapper";
 import PageHero from "../components/PageHero";
 import LegalSections, { type LegalSection } from "../components/LegalSections";
 import CtaBand from "../components/CtaBand";
+import { useSeo } from "../lib/seo";
 
 const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
 
@@ -45,6 +46,11 @@ const SECTIONS: LegalSection[] = [
 ];
 
 export default function Contact() {
+  useSeo({
+    title: "Contact Us",
+    description: "Have questions, suggestions, or want to collaborate?",
+    canonicalPath: "/contact",
+  });
   return (
     <PageWrapper>
       <PageHero

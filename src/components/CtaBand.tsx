@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Atmosphere from "./Atmosphere";
 import SplitHeading from "./SplitHeading";
 import Reveal from "./Reveal";
@@ -31,8 +31,6 @@ export default function CtaBand({
   primary = { label: "Browse ROM Hacks", to: "/hacks" },
   secondary = { label: "Need a hand?", to: "/qa" },
 }: Props) {
-  const navigate = useNavigate();
-
   return (
     <section className="grain relative isolate overflow-hidden border-t border-white/10">
       <Atmosphere tone="hero" grid={false} sweep />
@@ -89,7 +87,7 @@ export default function CtaBand({
                 </svg>
               </a>
             ) : (
-              <button onClick={() => navigate(primary.to)} className="btn-hero group">
+              <Link to={primary.to} className="btn-hero group">
                 {primary.label}
                 <svg
                   width="15"
@@ -107,7 +105,7 @@ export default function CtaBand({
                     strokeLinejoin="round"
                   />
                 </svg>
-              </button>
+              </Link>
             )}
 
             {isExternal(secondary.to) ? (
@@ -115,9 +113,9 @@ export default function CtaBand({
                 {secondary.label}
               </a>
             ) : (
-              <button onClick={() => navigate(secondary.to)} className="btn-hero-ghost">
+              <Link to={secondary.to} className="btn-hero-ghost">
                 {secondary.label}
-              </button>
+              </Link>
             )}
           </div>
         </Reveal>

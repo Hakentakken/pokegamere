@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Atmosphere from "../Atmosphere";
 import Reveal from "../Reveal";
@@ -20,8 +20,6 @@ type Props = {
  * download CTA rises last — the page resolves on the thing you came for.
  */
 export default function DownloadBand({ hack, downloading, steps, onDownload }: Props) {
-  const navigate = useNavigate();
-
   return (
     <section className="grain relative isolate overflow-hidden border-t border-white/10">
       <Atmosphere tone="hero" grid={false} />
@@ -87,9 +85,9 @@ export default function DownloadBand({ hack, downloading, steps, onDownload }: P
                     {downloading ? "Preparing Download..." : "Download ROM / Patch"}
                   </button>
                 )}
-                <button onClick={() => navigate("/emulators")} className="btn-hero-ghost">
+                <Link to="/emulators" className="btn-hero-ghost">
                   Get an emulator
-                </button>
+                </Link>
               </div>
 
               <motion.p

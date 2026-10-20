@@ -2,6 +2,7 @@ import PageWrapper from "../components/PageWrapper";
 import PageHero from "../components/PageHero";
 import LegalSections, { type LegalSection } from "../components/LegalSections";
 import CtaBand from "../components/CtaBand";
+import { useSeo } from "../lib/seo";
 
 const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
 
@@ -55,6 +56,11 @@ const SECTIONS: LegalSection[] = [
 ];
 
 export default function About() {
+  useSeo({
+    title: "About PokéSmith",
+    description: "A fan project for people who would rather be playing than hunting for a working link.",
+    canonicalPath: "/about",
+  });
   return (
     <PageWrapper>
       <PageHero

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Screenshot from "./Screenshot";
 import Lightbox from "./Lightbox";
 import Parallax from "./Parallax";
+import { IMAGE_WIDTH } from "../lib/imageUrl";
 import { DUR, EASE, VIEWPORT } from "../lib/motion";
 
 type Props = {
@@ -106,7 +107,16 @@ export default function ScreenshotGallery({ images, title }: Props) {
                   : "border-white/10 opacity-55 hover:opacity-90"
               }`}
             >
-              <Screenshot src={src} alt="" variant="preview" className="!rounded-xl" />
+              <Screenshot
+                src={src}
+                alt=""
+                variant="preview"
+                // The selected thumbnail asks for the stage's width, so it is
+                // answered from bytes the stage already fetched — no second
+                // request for the same picture. The others stay thumbnail-sized.
+                width={i === active ? IMAGE_WIDTH.shot : undefined}
+                className="!rounded-xl"
+              />
             </button>
           ))}
         </div>

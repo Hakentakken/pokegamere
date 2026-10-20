@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import CoverImage from "./CoverImage";
 import { MetaChips, Stars } from "./HackMeta";
@@ -6,6 +6,8 @@ import { DUR, EASE } from "../lib/motion";
 
 type Props = {
   id: string;
+  /** Canonical URL slug for this hack (`/hacks/<slug>`). Falls back to the legacy id URL. */
+  slug?: string;
   title: string;
   author: string;
   rating: number;
@@ -37,16 +39,16 @@ const titleSizeFor = (title: string | null | undefined) => {
  *
  * The artwork is the primary action (it opens the detail page) and the
  * "Details / Patch" row repeats those destinations explicitly, so keyboard and
- * screen-reader users reach the same places as a pointer user. Motion stays
- * quiet here: image depth, a light that follows the cursor, metadata that
- * settles — not a lift-and-scale on everything.
+ * screen-reader users reach the same places as a pointer user. Both are real
+ * `<a>` links so crawlers can discover every hack from the listing pages.
+ * Motion stays quiet here: image depth, a light that follows the cursor,
+ * metadata that settles — not a lift-and-scale on everything.
  */
 export default function HackCard({
-  id, title, author, rating, baseGame, platform, status, coverImage, description,
+  id, slug, title, author, rating, baseGame, platform, status, coverImage, description,
   variant = "grid", index = 0, showActions = true,
 }: Props) {
-  const navigate = useNavigate();
-  const open = () => navigate(`/hack/${id}`);
+  const to = slug ? `/hacks/${slug}` : `/hack/${id}`;
 
   // Pointer-tracked light: CSS custom properties only — no React state, no re-render
   const trackLight = (event: React.PointerEvent<HTMLElement>) => {
@@ -81,7 +83,7 @@ export default function HackCard({
       <span className="light-layer" aria-hidden="true" />
 
       {/* ARTWORK — the primary action */}
-      <button onClick={open} className={`relative block w-full overflow-hidden text-left ${frame}`} aria-label={`Open ${title}`}>
+      <Link to={to} className={`relative block w-full overflow-hidden text-left ${frame}`} aria-label={`Open ${title}`}>
         <CoverImage
           src={coverImage}
           alt={title}
@@ -105,25 +107,24 @@ export default function HackCard({
             <path d="M2 7h10M8.5 3.5 12 7l-3.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-      </button>
+      </Link>
 
       {/* CONTENT */}
       <div className={`flex flex-1 flex-col ${rail ? "gap-3 p-5" : compact ? "gap-2 p-4" : "gap-3 p-4"}`}>
         <div>
           {/*
             Two title lines are reserved (`min-h` = 2 × text-lg/leading-snug = 49.5px)
-            and the size steps down slightly as a name grows, so short and long
-            names share one baseline and the card height never depends on the
-            title. `break-words` stops unbroken strings from overflowing the
-            card; `line-clamp-2` is the final guard for pathological names —
-            they wrap onto two lines instead of growing the card, and the native
-            tooltip still exposes the full name.
+            and the size steps down slightly as a name grows, so short names keep a
+            stable baseline while a long name simply continues below it. The title is
+            never clamped or cut: `break-words` wraps unbroken strings so even a very
+            long ROM-hack name fits the card and stays fully readable, and the native
+            tooltip still exposes it verbatim.
           */}
           <h3
             title={title && title.length > 40 ? title : undefined}
-            className={`font-display leading-snug font-bold text-white break-words line-clamp-2 min-h-[49.5px] transition-colors duration-300 group-hover:text-brand-400 ${titleSizeFor(title)}`}
+            className={`font-display leading-snug font-bold text-white break-words min-h-[49.5px] transition-colors duration-300 group-hover:text-brand-400 ${titleSizeFor(title)}`}
           >
-            {title}
+            <Link to={to} className="transition-colors duration-300">{title}</Link>
           </h3>
           <p className="mt-0.5 text-sm text-neutral-500">by {author || "Unknown"}</p>
         </div>
@@ -137,8 +138,8 @@ export default function HackCard({
 
         {showActions && (
           <div className="mt-auto flex gap-2 pt-2">
-            <button onClick={open} className="flex-1 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow-sm active:translate-y-px">Details</button>
-            <button onClick={() => navigate("/patcher")} className="flex-1 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-neutral-200 transition duration-300 hover:border-white/40 hover:bg-white/10">Patch</button>
+            <Link to={to} className="flex-1 rounded-lg bg-brand px-3 py-2 text-center text-sm font-semibold text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow-sm active:translate-y-px">Details</Link>
+            <Link to="/patcher" className="flex-1 rounded-lg border border-white/15 px-3 py-2 text-center text-sm font-medium text-neutral-200 transition duration-300 hover:border-white/40 hover:bg-white/10">Patch</Link>
           </div>
         )}
       </div>

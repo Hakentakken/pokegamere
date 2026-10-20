@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PageWrapper from "../components/PageWrapper";
 import Atmosphere from "../components/Atmosphere";
@@ -12,6 +12,7 @@ import type { RoomStationId } from "../components/patcher/roomLayout";
 import { DUR, EASE, stagger } from "../lib/motion";
 import { supabase } from "../lib/supabase";
 import { loadRomPatcherWeb, type RpBinFile } from "../lib/romPatcher";
+import { useSeo } from "../lib/seo";
 
 const STAGES = [
   { label: "Drag in your legally obtained base ROM", done: true },
@@ -53,8 +54,11 @@ const formatBytes = (n: number) =>
  * if the user leaves the page and comes back.
  */
 export default function Patcher() {
-  const navigate = useNavigate();
-
+  useSeo({
+    title: "ROM Patcher — Patch in Your Browser",
+    description: "Drag in your legally obtained base ROM, drop the patch on top, and play in minutes — all client-side.",
+    canonicalPath: "/patcher",
+  });
   const romRef = useRef<HTMLInputElement>(null);
   const patchRef = useRef<HTMLInputElement>(null);
   const applyRef = useRef<HTMLButtonElement>(null);
@@ -619,12 +623,12 @@ export default function Patcher() {
 
           <Reveal as="up" delay={0.7}>
             <div className="mt-12 flex flex-wrap justify-center gap-3">
-              <button onClick={() => navigate("/qa")} className="btn-hero">
+              <Link to="/qa" className="btn-hero">
                 How to patch by hand
-              </button>
-              <button onClick={() => navigate("/hacks")} className="btn-hero-ghost">
+              </Link>
+              <Link to="/hacks" className="btn-hero-ghost">
                 Browse hacks
-              </button>
+              </Link>
             </div>
           </Reveal>
         </div>
