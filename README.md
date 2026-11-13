@@ -8,7 +8,7 @@ React 19 + TypeScript + Vite + Tailwind CSS, backed by **Supabase** (auth, datab
 
 - `api/page.ts` serves the page content, unique title, description, canonical and JSON-LD in the initial response. Game and catalogue pages read current public records. It returns permanent redirects for legacy UUID URLs, 404 for missing games, and a non-cacheable 503 for upstream failures.
 - `/sitemap-hacks.xml` reads current public records with pagination. Both the sitemap and page HTML have a five-minute edge cache. Newly published games become discoverable without a rebuild; Google still decides when to crawl and index them. Keep published titles stable: slugs are derived from titles, and a title edit changes the URL.
-- The patcher implementation and assets are retained, but navigation no longer links to it and `/patcher` temporarily redirects to `/qa`.
+- The patcher implementation and assets are retained, but its public route is removed. `/patcher` returns a noindexed 404, including for direct visits; navigation and sitemaps do not link to it.
 - Local `npm run dev` and ordinary `npm run preview` are client-only. To exercise the production HTML and HTTP behavior, run `npm run build`, then `npm run preview:seo` (http://127.0.0.1:4175).
 - Run `npm run check:seo`, then `npm run check:seo-server`. `node scripts/test-sitemap-endpoint.mjs` checks the real live database against the sitemap; `npm run audit:content` identifies catalogue entries needing editorial attention.
 

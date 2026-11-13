@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -46,8 +46,7 @@ export default function App() {
             <Route path="/hack/:id" element={<HackDetail key={pathname} />} />
             <Route path="/cheats" element={<Cheats />} />
             <Route path="/emulators" element={<Emulators />} />
-            {/* Patcher implementation is retained; the public tool is disconnected. */}
-            <Route path="/patcher" element={<Navigate to="/qa" replace />} />
+            {/* No public patcher route. Its source is retained for future use. */}
             <Route path="/qa" element={<QA />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />

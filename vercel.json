@@ -40,11 +40,6 @@
       ],
       "destination": "https://pokesmith.com/:path*",
       "permanent": true
-    },
-    {
-      "source": "/patcher",
-      "destination": "/qa",
-      "permanent": false
     }
   ]
 }

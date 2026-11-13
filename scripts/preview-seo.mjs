@@ -11,7 +11,6 @@ const root = path.resolve('dist');
 const types = { '.js': 'text/javascript', '.css': 'text/css', '.xml': 'application/xml', '.txt': 'text/plain', '.jpeg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml' };
 httpServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
-  if (url.pathname === '/patcher') { res.writeHead(307, { Location: '/qa' }); return res.end(); }
   if (url.pathname === '/sitemap-hacks.xml') return sitemap(req, res);
   const file = path.resolve(root, '.' + decodeURIComponent(url.pathname));
   if (file.startsWith(root + path.sep) && path.extname(file)) {
