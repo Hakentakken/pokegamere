@@ -33,6 +33,8 @@ type Props = {
  * screenshots, the overview and the download information below.
  */
 export default function DetailHero({ hack }: Props) {
+  const description = hack.description?.replace(/\s+/g, ' ').trim() || '';
+  const summary = description.length > 260 ? `${description.slice(0, 260).replace(/\s+\S*$/, '')}…` : description;
   const fields = [
     { term: "Base game", value: hack.base_game || "—" },
     { term: "Platform", value: hack.platform || "—" },
@@ -96,6 +98,10 @@ export default function DetailHero({ hack }: Props) {
               <p className="mt-4 font-display text-lg text-brand-400">
                 by {hack.author || "Unknown"}
               </p>
+              {summary && <div className="mt-5 max-w-2xl">
+                <p className="text-base leading-relaxed text-neutral-300">{summary}</p>
+                <a href="#overview" className="link-underline mt-2 inline-block text-sm text-brand-400">Read the full overview</a>
+              </div>}
               <div className="mt-6">
                 <MetaChips baseGame={hack.base_game || ""} platform={hack.platform || ""} />
               </div>

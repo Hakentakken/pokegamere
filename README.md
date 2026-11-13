@@ -31,6 +31,10 @@ After deployment has been verified, submit the two existing sitemap URLs using S
 
 ### Editorial and launch checks
 
+The admin game tab includes an editorial review queue for brief or repeated descriptions and missing creator/platform/status information. It opens the existing edit form; it does not rewrite or publish records automatically. The review flag is not a Google policy threshold. Game pages show a short excerpt near the title, with the full overview, features and screenshots above downloads.
+
+Before requesting an AdSense review, verify the actual account rejection details and every public section, not only the homepage. Remaining checks include source-checked original game descriptions, distribution rights for linked files, accurate credits, and the account's Privacy & messaging configuration. Google requires a certified CMP for personalized ads to users in the EEA, UK and Switzerland; a privacy-policy page alone does not implement that requirement. Also review Auto ads page exclusions for admin, login, error and other non-content pages. These account settings have not been verified or changed locally. No AdSense approval is implied by successful build or SEO tests.
+
 The homepage now links to `/guides`, an original player guide covering release selection, patch/standalone/patched-ROM formats, source checks and save backups. The public policies disclose the catalogue's mixed external download formats. Download panels display the actual destination hostname without claiming it is a verified creator source. Per-game format and redistribution permissions remain an editorial check; they are not inferred from a file-hosting domain.
 
 Public contact: **pokesmithoriginal@gmail.com**. Ratings are administrator-entered catalogue ratings, not verified player-review averages. The privacy page describes existing Analytics, AdSense, embeds, storage and contact handling; it is not a substitute for configuring any consent requirements applicable to actual visitors.

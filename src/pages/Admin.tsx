@@ -1,4 +1,5 @@
 import PublishingChecklist from "../components/PublishingChecklist";
+import ContentReviewQueue from "../components/ContentReviewQueue";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -412,6 +413,7 @@ export default function Admin() {
         {/* ================= HACKS ================= */}
         {activeTab === "hack" && (
           <>
+            <ContentReviewQueue entries={hacks} onEdit={openEdit} />
             {/* EDIT MODAL */}
             {editingHack && (
               <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 py-10 backdrop-blur-sm">

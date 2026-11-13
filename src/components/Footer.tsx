@@ -71,6 +71,7 @@ export default function Footer() {
                 A home for fan-made Pokémon adventures — discover ROM hacks, grab cheats,
                 and get emulators in one place.
               </p>
+              <a href="mailto:pokesmithoriginal@gmail.com" className="link-underline mt-3 inline-block break-all text-sm text-neutral-300 hover:text-brand-400">pokesmithoriginal@gmail.com</a>
 
               <a
                 href="https://www.youtube.com/@InvincibleGreninjaIsHere"
