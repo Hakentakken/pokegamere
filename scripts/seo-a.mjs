@@ -26,7 +26,7 @@ check('sitemap-hacks.xml is non-empty', urlCount(hacksSitemap) > 0, 'found ' + u
 check('sitemap.xml has no fabricated lastmod', !/<lastmod>/.test(sitemapXml))
 const hackLastmods = (hacksSitemap.match(/<lastmod>([^<]+)<\/lastmod>/g) || []).map((m) => m.slice(9, -10))
 check('hack lastmod values are real dates', hackLastmods.length === urlCount(hacksSitemap) && hackLastmods.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)), hackLastmods.length + '/' + urlCount(hacksSitemap))
-const slugLocs = hackLocs.filter((l) => l.startsWith('https://pokesmith.com/hacks/'))
+const slugLocs = hackLocs.filter((l) => l.startsWith('https://www.pokesmith.com/hacks/'))
 check('all hack loc are /hacks/:slug', slugLocs.length === hackLocs.length, slugLocs.length + '/' + hackLocs.length)
 const bad = staticLocs.concat(hackLocs).filter((l) => /\/admin|\/login/.test(l))
 check('sitemaps contain no /admin or /login', bad.length === 0)

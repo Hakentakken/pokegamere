@@ -28,18 +28,5 @@
     "api/page.ts": {
       "includeFiles": "{dist,server-dist}/**"
     }
-  },
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.pokesmith.com"
-        }
-      ],
-      "destination": "https://pokesmith.com/:path*",
-      "permanent": true
-    }
-  ]
+  }
 }

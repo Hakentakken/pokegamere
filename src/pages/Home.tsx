@@ -47,7 +47,7 @@ export default function Home() {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "PokéSmith",
-      url: "https://pokesmith.com/",
+      url: "https://www.pokesmith.com/",
     },
   });
   const [latestHacks, setLatestHacks] = useState<HackRecord[]>(() => initial ? catalogueCards(initial).sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0,4) : []);

@@ -10,7 +10,7 @@ import { createContext, useContext, useEffect } from "react";
  * The effect keeps the same metadata up to date during client navigation.
  */
 
-export const SITE_URL = "https://pokesmith.com";
+export const SITE_URL = "https://www.pokesmith.com";
 
 export type SeoOptions = {
   /** Document title, without the site suffix (added automatically when distinct). */

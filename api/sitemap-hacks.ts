@@ -18,7 +18,7 @@
 // Failure mode is a loud HTTP 500 (text/plain) + server log — never stale
 // URLs served as valid XML.
 export default async function handler(req: any, res: any): Promise<void> {
-  const SITE_URL = 'https://pokesmith.com'
+  const SITE_URL = 'https://www.pokesmith.com'
   const SB_URL =
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
   const SB_KEY =

@@ -12,7 +12,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const renderer = path.join(process.cwd(), 'server-dist/entry-server.js');
     const { pathToFileURL } = await import('node:url');
     const { render } = await import(pathToFileURL(renderer).href);
-    const pathname = new URL(req.url || '/', 'https://pokesmith.com').pathname;
+    const pathname = new URL(req.url || '/', 'https://www.pokesmith.com').pathname;
     const catalogue = pathname === '/' || /^\/hacks?(\/|$)/.test(pathname) ? await fetchCatalogue() : null;
     const result = render(req.url || '/', catalogue);
     if (result.location) {

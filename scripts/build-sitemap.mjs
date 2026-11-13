@@ -142,7 +142,7 @@ async function main() {
   const writeSitemap = (routes, outFile) => {
     const rows = routes.map((r) => {
       const lastmod = r.lastmod ? `<lastmod>${xmlEscape(r.lastmod)}</lastmod>` : ''
-      return `  <url><loc>https://pokesmith.com${xmlEscape(r.loc)}</loc>${lastmod}</url>`
+      return `  <url><loc>https://www.pokesmith.com${xmlEscape(r.loc)}</loc>${lastmod}</url>`
     }).join('\n')
     writeFileSync(path.join(root, 'public', outFile), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + rows + '\n</urlset>\n')
   }

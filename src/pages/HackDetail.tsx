@@ -132,7 +132,7 @@ export default function HackDetail() {
           author: hack.author ? { "@type": "Person", name: hack.author } : undefined,
           description: hack.description || undefined,
           gamePlatform: hack.platform || undefined,
-          url: canonicalSlug ? `https://pokesmith.com/hacks/${canonicalSlug}` : undefined,
+          url: canonicalSlug ? `https://www.pokesmith.com/hacks/${canonicalSlug}` : undefined,
         }
       : undefined,
   });

@@ -4,6 +4,8 @@ React 19 + TypeScript + Vite + Tailwind CSS, backed by **Supabase** (auth, datab
 
 ## Search visibility and publishing
 
+The canonical host is `https://www.pokesmith.com`, matching the existing Vercel Domains redirect from the apex host. Do not add a reverse `www` → apex rule in `vercel.json`: it creates a redirect loop on deep links. The hosting-level domain configuration owns hostname redirects; application redirects only normalize game paths on the same host.
+
 `npm run build` produces the browser assets in `dist/` and the server renderer in `server-dist/`. Deploy both through the included Vercel configuration: a static-only upload of `dist/` does **not** provide server rendering or the live sitemap. No database migration is required. Server functions use the public, RLS-filtered Supabase key, never a service-role key.
 
 - `api/page.ts` serves the page content, unique title, description, canonical and JSON-LD in the initial response. Game and catalogue pages read current public records. It returns permanent redirects for legacy UUID URLs, 404 for missing games, and a non-cacheable 503 for upstream failures.
@@ -20,7 +22,7 @@ The VS Code Google Search Console MCP extension stores credentials outside this 
 npm run search-console -- sites
 npm run search-console -- sitemaps sc-domain:pokesmith.com
 npm run search-console -- performance sc-domain:pokesmith.com
-npm run search-console -- inspect sc-domain:pokesmith.com https://pokesmith.com/hacks/pokemon-z-english
+npm run search-console -- inspect sc-domain:pokesmith.com https://www.pokesmith.com/hacks/pokemon-z-english
 ```
 
 Set `GSC_CREDENTIALS_PATH` to the extension's ADC file if your storage location differs. Reauthenticate through the extension if Google revokes or expires its refresh token. The utility never uses Google's restricted Indexing API for ordinary game pages.

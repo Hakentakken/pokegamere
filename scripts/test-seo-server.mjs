@@ -15,7 +15,7 @@ try {
     const result = render(canonical, rows);
     assert.equal(result.status, 200, canonical);
     assert.match(result.head, /name="robots" content="index, follow"/);
-    assert(result.head.includes(`href="https://pokesmith.com${canonical}"`));
+    assert(result.head.includes(`href="https://www.pokesmith.com${canonical}"`));
     assert.match(result.html, /<h1/);
     assert(result.html.indexOf('id="screenshots"') < result.html.indexOf('id="downloads"'));
     assert(!result.html.includes('href="/patcher"'));
@@ -41,5 +41,11 @@ try {
   assert(!escaped.head.includes('<script>alert(1)'));
   const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
   assert.equal(config.rewrites[0].destination, '/api/sitemap-hacks');
+  // Production already redirects the apex domain to www in Vercel Domains.
+  // A repository rule redirecting www back to apex caused an HTTP 307/308 loop.
+  for (const rule of config.redirects || []) {
+    const targetsApex = /^https:\/\/pokesmith\.com(?:\/|$)/.test(rule.destination);
+    assert(!targetsApex, 'Do not redirect to apex: the hosting domain redirects apex back to www');
+  }
   console.log(`PASS: ${rows.length} server-rendered games, canonical redirects, catalogue links, metadata, screenshots before downloads, 404s and injection escaping.`);
 } finally { await vite.close(); }

@@ -62,7 +62,7 @@ check(
 )
 check('body is an XML urlset', res.body.includes('<?xml') && res.body.includes('<urlset'))
 const locs = [...res.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
-check('all locs are canonical /hacks/:slug URLs', locs.length > 0 && locs.every((l) => l.startsWith('https://pokesmith.com/hacks/')), locs.length + ' urls')
+check('all locs are canonical /hacks/:slug URLs', locs.length > 0 && locs.every((l) => l.startsWith('https://www.pokesmith.com/hacks/')), locs.length + ' urls')
 check('no /admin, /login, /hack/ (legacy) locs', !locs.some((l) => /\/(admin|login)/.test(l) || /\/hack\//.test(l)))
 const lastmods = [...res.body.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((m) => m[1])
 check(
