@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir server-dist",
     "prebuild": "node scripts/build-sitemap.mjs",
     "lint": "eslint .",
     "check:db": "node connection-check.mjs",
     "check:images": "node verify-images.mjs",
     "check:ui": "node smoke-render.mjs",
     "check:seo": "node scripts/check-seo.mjs",
+    "check:seo-server": "node scripts/test-seo-server.mjs && node scripts/test-sitemap-pagination.mjs",
+    "preview:seo": "node scripts/preview-seo.mjs",
+    "audit:content": "node scripts/audit-content.mjs",
+    "search-console": "node scripts/search-console.mjs",
     "check:vcdiff": "node check-vcdiff-lzma.mjs",
     "preview": "vite preview"
   },

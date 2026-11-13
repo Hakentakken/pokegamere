@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 
 /**
  * Document-head SEO for the SPA — titles, meta description, canonical URLs,
@@ -6,9 +6,8 @@ import { useEffect } from "react";
  * library. Everything this hook writes is scoped per page: each page declares
  * its own values, and route changes simply overwrite them.
  *
- * Googlebot renders JavaScript, so these tags are visible to search engines on
- * this Vite SPA. Crawlers that do not execute JS only ever see the static
- * `index.html` tags (the site-wide defaults), which stay untouched here.
+ * The request-scoped collector emits these tags in server-rendered HTML.
+ * The effect keeps the same metadata up to date during client navigation.
  */
 
 export const SITE_URL = "https://pokesmith.com";
@@ -29,6 +28,8 @@ export type SeoOptions = {
 };
 
 const SITE_NAME = "PokéSmith";
+// Request-scoped collector for initial HTML; never a module-global mutable object.
+export const SeoContext = createContext<{ current?: SeoOptions } | null>(null);
 
 /** Insert-or-update a <meta>/<link> tag keyed by `key` (a selector attribute pair). */
 function upsertTag(tagName: "meta" | "link", key: { name?: string; property?: string; rel?: string }, attrs: Record<string, string>) {
@@ -53,21 +54,24 @@ export function useSeo({
   ogType = "website",
   jsonLd,
 }: SeoOptions) {
+  const collector = useContext(SeoContext);
+  if (collector) collector.current = { title, description, canonicalPath, robots, ogType, jsonLd };
   useEffect(() => {
     const fullTitle = title === SITE_NAME || title.endsWith(`| ${SITE_NAME}`) ? title : `${title} | ${SITE_NAME}`;
     document.title = fullTitle;
 
-    if (description) upsertTag("meta", { name: "description" }, { content: description });
+    upsertTag("meta", { name: "description" }, { content: description || '' });
 
     upsertTag("meta", { name: "robots" }, { content: robots });
 
     const canonical = canonicalPath ? new URL(canonicalPath, SITE_URL).href : undefined;
     if (canonical) upsertTag("link", { rel: "canonical" }, { href: canonical });
+    else document.head.querySelector('link[rel="canonical"]')?.remove();
 
     upsertTag("meta", { property: "og:title" }, { content: fullTitle });
     upsertTag("meta", { property: "og:site_name" }, { content: SITE_NAME });
     upsertTag("meta", { property: "og:type" }, { content: ogType });
-    if (description) upsertTag("meta", { property: "og:description" }, { content: description });
+    upsertTag("meta", { property: "og:description" }, { content: description || '' });
     if (canonical) upsertTag("meta", { property: "og:url" }, { content: canonical });
     upsertTag("meta", { name: "twitter:card" }, { content: "summary" });
 
@@ -78,6 +82,7 @@ export function useSeo({
       existing?.remove();
     } else {
       const script = existing ?? Object.assign(document.createElement("script"), { id: JSON_LD_ID });
+      script.setAttribute('type', 'application/ld+json');
       script.textContent = JSON.stringify(jsonLd);
       if (!existing) document.head.appendChild(script);
     }

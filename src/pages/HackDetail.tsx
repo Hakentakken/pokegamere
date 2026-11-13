@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
 import PageWrapper from "../components/PageWrapper";
@@ -11,9 +11,12 @@ import DownloadBand from "../components/hack/DownloadBand";
 import { parseImageList, parseTextList } from "../lib/imageList";
 import { getHackSlugIndex, resolveHackSlug } from "../lib/hackSlugs";
 import { shortId, slugify } from "../lib/slug";
+import { useCatalogue, catalogueIndex, type PublicHack } from "../lib/catalogue";
+import { findIdBySlug } from "../lib/slug";
 import { useSeo } from "../lib/seo";
 
-const HOW_TO_PLAY = ["Download base ROM", "Download patch", "Use patcher tool", "Run in emulator"];
+const HOW_TO_PLAY = ["Check the required base game and revision in the release notes", "Use your own lawfully obtained base-game file", "Follow the creator instructions for the patch format", "Back up your save and use a compatible emulator"];
+const FAN_GAME_STEPS = ["Check the supported operating system and release notes", "Use the creator's installation instructions for this version", "Keep the supplied game files together when extracting an archive", "Back up your saves before installing an update"];
 
 /** UUID v4 shape — tells the two route styles apart without a second fetch. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,18 +24,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export default function HackDetail() {
   // `/hacks/:slug` supplies `slug`; legacy `/hack/:id` supplies `id` (a UUID).
   const { slug, id } = useParams();
-  const [hack, setHack] = useState<any>(null);
-  const [canonicalSlug, setCanonicalSlug] = useState<string | null>(null);
-  const [related, setRelated] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
+  const navigate = useNavigate();
+  const catalogue = useCatalogue();
+  const initialIndex = catalogue ? catalogueIndex(catalogue) : null;
+  const initialId = catalogue && initialIndex ? (id || findIdBySlug(initialIndex, catalogue, slug)) : null;
+  const initialHack = catalogue?.find(row => row.id === initialId) || null;
+  const [hack, setHack] = useState<PublicHack | null>(initialHack);
+  const [loadError, setLoadError] = useState(false);
+  const [canonicalSlug, setCanonicalSlug] = useState<string | null>(initialId ? initialIndex?.get(initialId) || null : null);
+  const [related, setRelated] = useState<PublicHack[]>(() => catalogue?.filter(row => row.id !== initialId && row.base_game === initialHack?.base_game).slice(0, 3) || []);
+  const [loading, setLoading] = useState(!catalogue);
 
   // Guards against a slow fetch for one hack painting over the next one when
   // the user navigates between detail pages quickly.
   const requestId = useRef(0);
 
   useEffect(() => {
-    void fetchHack();
+    if (initialHack && initialIndex) {
+      const canonical = initialIndex.get(initialHack.id);
+      if (canonical && slug !== canonical) navigate(`/hacks/${canonical}`, { replace: true });
+    } else void fetchHack();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, id]);
 
@@ -40,6 +51,8 @@ export default function HackDetail() {
     const request = ++requestId.current;
     setLoading(true);
     setHack(null);
+    setLoadError(false);
+    setCanonicalSlug(null);
     try {
       let recordId: string | null = null;
 
@@ -77,7 +90,7 @@ export default function HackDetail() {
       // permanent redirect: `replace` keeps the history clean, and the
       // canonical <link> set below tells crawlers the preferred URL.
       if (canonical !== slug) {
-        window.location.href = `/hacks/${canonical}`;
+        navigate(`/hacks/${canonical}`, { replace: true });
         return;
       }
 
@@ -86,12 +99,14 @@ export default function HackDetail() {
 
       const { data: relatedData } = await supabase
         .from("hacks")
-        .select("id, created_at, title, author, description, base_game, platform, status, rating, cover_image")
+        .select("id, created_at, title, author, description, base_game, platform, status, rating, cover_image, download_link, screenshots, features")
+        .eq("base_game", data.base_game)
         .neq("id", recordId)
         .limit(3);
 
-      setRelated(relatedData || []);
+      if (request === requestId.current) setRelated(relatedData || []);
     } catch (err) {
+      if (request === requestId.current) setLoadError(true);
       console.error(err);
     } finally {
       if (request === requestId.current) setLoading(false);
@@ -102,13 +117,13 @@ export default function HackDetail() {
   // canonical slug URL. A missing record is noindexed, never described.
   useSeo({
     title: hack
-      ? `${hack.title} — Pokémon ${hack.platform || "ROM"} Hack`
+      ? `${hack.title} — Screenshots, Features & Setup`
       : loading
         ? "Loading…"
-        : "Hack not found",
-    description: hack?.description || undefined,
+        : loadError ? "Temporarily unavailable" : "Hack not found",
+    description: hack?.description?.replace(/\s+/g, " ").slice(0, 160) || undefined,
     canonicalPath: canonicalSlug ? `/hacks/${canonicalSlug}` : undefined,
-    robots: hack ? "index, follow" : "noindex, nofollow",
+    robots: hack || loading || loadError ? "index, follow" : "noindex, follow",
     jsonLd: hack
       ? {
           "@context": "https://schema.org",
@@ -121,16 +136,6 @@ export default function HackDetail() {
         }
       : undefined,
   });
-
-  // ✅ NEW DOWNLOAD HANDLER (safe)
-  const handleDownload = (link: string) => {
-    setDownloading(true);
-
-    setTimeout(() => {
-      window.open(link, "_blank");
-      setDownloading(false);
-    }, 1200);
-  };
 
   if (loading) {
     return (
@@ -149,7 +154,7 @@ export default function HackDetail() {
         <span className="text-4xl" aria-hidden="true">
           🕹️
         </span>
-        <p className="font-display text-xl font-bold text-white">Hack not found</p>
+        <p className="font-display text-xl font-bold text-white">{loadError ? "Unable to load this game right now" : "Hack not found"}</p>
         <Link to="/hacks" className="btn-ghost">
           Browse other hacks
         </Link>
@@ -161,14 +166,35 @@ export default function HackDetail() {
   // stored in `hacks.screenshots` / `hacks.features` (see src/lib/imageList.ts)
   const screenshots = parseImageList(hack.screenshots);
   const features = parseTextList(hack.features);
-  const download = () => hack.download_link && handleDownload(hack.download_link);
 
   return (
     <PageWrapper>
-      <DetailHero hack={hack} downloading={downloading} onDownload={download} />
+      <DetailHero hack={hack} />
+
+      {/* SCREENSHOTS */}
+      <section id="screenshots" className="scroll-mt-24 relative border-t border-white/10">
+        <div className="shell band-tight">
+          <SectionHeader
+            eyebrow="In motion"
+            title="Screenshots"
+            lede={
+              screenshots.length > 1
+                ? "Select any shot to open it full screen — arrow keys work once it is open."
+                : undefined
+            }
+          />
+          <div className="mt-10">
+            {screenshots.length > 0 ? (
+              <ScreenshotGallery images={screenshots} title={hack.title} />
+            ) : (
+              <p className="text-neutral-500">No screenshots available.</p>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* DESCRIPTION + FEATURES */}
-      <section className="shell band-tight">
+      <section id="overview" className="shell band-tight scroll-mt-24">
         <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
           <div>
             <SectionHeader eyebrow="The story" title="About this hack" />
@@ -195,34 +221,10 @@ export default function HackDetail() {
         </div>
       </section>
 
-      {/* SCREENSHOTS */}
-      <section className="relative border-t border-white/10">
-        <div className="shell band-tight">
-          <SectionHeader
-            eyebrow="In motion"
-            title="Screenshots"
-            lede={
-              screenshots.length > 1
-                ? "Select any shot to open it full screen — arrow keys work once it is open."
-                : undefined
-            }
-          />
-          <div className="mt-10">
-            {screenshots.length > 0 ? (
-              <ScreenshotGallery images={screenshots} title={hack.title} />
-            ) : (
-              <p className="text-neutral-500">No screenshots available.</p>
-            )}
-          </div>
-        </div>
-      </section>
-
       {/* HOW TO PLAY + DOWNLOAD */}
       <DownloadBand
         hack={hack}
-        downloading={downloading}
-        steps={HOW_TO_PLAY}
-        onDownload={download}
+        steps={/fangame|fan game|windows|rpg maker|pc/i.test(hack.platform || '') ? FAN_GAME_STEPS : HOW_TO_PLAY}
       />
 
       {/* RELATED */}
@@ -244,6 +246,7 @@ export default function HackDetail() {
             {related.map((h, i) => (
               <HackCard
                 key={h.id}
+                slug={initialIndex?.get(h.id)}
                 id={String(h.id)}
                 title={h.title}
                 author={h.author}

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { slugForId } from "../lib/hackSlugs";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import CoverImage from "./CoverImage";
@@ -48,7 +50,9 @@ export default function HackCard({
   id, slug, title, author, rating, baseGame, platform, status, coverImage, description,
   variant = "grid", index = 0, showActions = true,
 }: Props) {
-  const to = slug ? `/hacks/${slug}` : `/hack/${id}`;
+  const [resolvedSlug, setResolvedSlug] = useState(slug);
+  useEffect(() => { let active = true; if (!slug) void slugForId(id, title).then(value => { if (active) setResolvedSlug(value); }); return () => { active = false; }; }, [id, title, slug]);
+  const to = (slug || resolvedSlug) ? `/hacks/${slug || resolvedSlug}` : `/hack/${id}`;
 
   // Pointer-tracked light: CSS custom properties only — no React state, no re-render
   const trackLight = (event: React.PointerEvent<HTMLElement>) => {
@@ -139,7 +143,6 @@ export default function HackCard({
         {showActions && (
           <div className="mt-auto flex gap-2 pt-2">
             <Link to={to} className="flex-1 rounded-lg bg-brand px-3 py-2 text-center text-sm font-semibold text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow-sm active:translate-y-px">Details</Link>
-            <Link to="/patcher" className="flex-1 rounded-lg border border-white/15 px-3 py-2 text-center text-sm font-medium text-neutral-200 transition duration-300 hover:border-white/40 hover:bg-white/10">Patch</Link>
           </div>
         )}
       </div>

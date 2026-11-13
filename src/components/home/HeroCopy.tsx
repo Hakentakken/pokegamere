@@ -64,15 +64,15 @@ export default function HeroCopy({ stats }: { stats?: Stats }) {
         {...from(0.55)}
         className="mt-6 font-display text-xl text-neutral-300 sm:text-2xl"
       >
-        Discover Amazing Pokémon ROM Hacks
+        Familiar worlds. Unexpected adventures.
       </motion.p>
 
       <motion.p
         {...from(0.7)}
         className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-400 text-balance sm:text-base"
       >
-        Explore fan-made Pokémon adventures, download patches, cheats, and emulators — all in
-        one place.
+        Discover Pokémon fan games and ROM hacks through screenshots, features and release
+        details. Find a project that fits the way you want to play, then check its setup and source.
       </motion.p>
 
       <motion.div {...from(0.85)} className="mt-9 flex flex-wrap gap-3">
@@ -95,8 +95,8 @@ export default function HeroCopy({ stats }: { stats?: Stats }) {
             />
           </svg>
         </Link>
-        <Link to="/patcher" className="btn-hero-ghost">
-          ROM Patcher
+        <Link to="/guides" className="btn-hero-ghost">
+          Read the player guide
         </Link>
       </motion.div>
 

@@ -16,24 +16,24 @@ import { buildSlugIndex, findIdBySlug, type SlugRow } from "./slug";
  */
 
 let cache: Promise<Map<string, string>> | null = null;
+let cachedAt = 0;
 
 /** All hack rows the index needs (lightweight - never screenshots/features). */
 async function fetchRows(): Promise<SlugRow[]> {
-  const { data, error } = await supabase
-    .from("hacks")
-    .select("id, title, created_at");
-  if (error) throw error;
-  return (data ?? []).map(
-    (row: { id: string; title: string | null; created_at: string | null }) => ({
-      id: String(row.id),
-      title: row.title,
-      createdAt: row.created_at,
-    })
-  );
+  const rows: SlugRow[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase.from('hacks').select('id, title, created_at')
+      .order('created_at').order('id').range(offset, offset + 499);
+    if (error) throw error;
+    rows.push(...(data || []).map(row => ({ id: String(row.id), title: row.title, createdAt: row.created_at })));
+    if (!data || data.length < 500) return rows;
+  }
 }
 
 export function getHackSlugIndex(): Promise<Map<string, string>> {
-  cache ??= fetchRows().then(buildSlugIndex);
+  if (Date.now() - cachedAt > 300000) cache = null;
+  if (!cache) cachedAt = Date.now();
+  cache ??= fetchRows().then(buildSlugIndex).catch(error => { cache = null; throw error; });
   return cache;
 }
 

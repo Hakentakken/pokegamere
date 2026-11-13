@@ -10,14 +10,14 @@ const STEPS: Step[] = [
     action: "Open the library",
   },
   {
-    title: "Grab the patch",
-    body: "Every listing links to its patch file. Apply it to your own legally obtained copy — that is all a patch is.",
-    to: "/patcher",
-    action: "How patching works",
+    title: "Check the release",
+    body: "Check whether the release is a patch, a standalone game or a patched ROM, then read its requirements and source information.",
+    to: "/guides#formats",
+    action: "Understand release formats",
   },
   {
     title: "Play it anywhere",
-    body: "Load the patched ROM in any compatible emulator, then fine-tune it with community cheat codes if you want.",
+    body: "Follow the creator’s setup instructions for your device. Keep a copy of your save before changing versions or trying cheat codes.",
     to: "/emulators",
     action: "Get an emulator",
   },
@@ -33,8 +33,8 @@ export default function ProcessBand() {
         <SectionHeader
           index="03 —"
           eyebrow="How it works"
-          title="From download to play"
-          lede="Three steps, no guesswork. This is the whole loop."
+          title="Make your next playthrough count"
+          lede="Explore the game, understand the release, and keep your progress safe."
         />
 
         <ProcessSteps steps={STEPS} />

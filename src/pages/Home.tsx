@@ -8,9 +8,12 @@ import FeaturedBand from "../components/home/FeaturedBand";
 import CategoryBand, { type Category } from "../components/home/CategoryBand";
 import ProcessBand from "../components/home/ProcessBand";
 import StudioBand from "../components/home/StudioBand";
+import FieldGuideBand from "../components/home/FieldGuideBand";
 import { supabase } from "../lib/supabase";
 import { normalizeImageUrl } from "../lib/imageUrl";
 import type { HackRecord } from "../components/FeaturedHack";
+
+import { useCatalogue, catalogueCards } from "../lib/catalogue";
 
 type Stats = { hacks: number; cheats: number; emulators: number } | null;
 
@@ -18,7 +21,7 @@ const TICKER = [
   "ROM Hacks",
   "Cheats",
   "Emulators",
-  "ROM Patcher",
+  "Game guides",
   "Q&A",
   "GBA · NDS · Classic",
   "Fan-made adventures",
@@ -34,10 +37,11 @@ const TICKER = [
  * simply omits those bands if they fail.
  */
 export default function Home() {
+  const initial = useCatalogue();
   useSeo({
     title: "Pokémon ROM Hacks, Cheats & Emulators",
     description:
-      "Discover fan-made Pokémon ROM hacks, cheats and emulators, patch games and start playing.",
+      "Discover fan-made Pokémon ROM hacks, cheats and emulators, compare screenshots, features and setup information.",
     canonicalPath: "/",
     jsonLd: {
       "@context": "https://schema.org",
@@ -46,10 +50,10 @@ export default function Home() {
       url: "https://pokesmith.com/",
     },
   });
-  const [latestHacks, setLatestHacks] = useState<HackRecord[]>([]);
+  const [latestHacks, setLatestHacks] = useState<HackRecord[]>(() => initial ? catalogueCards(initial).sort((a,b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).slice(0,4) : []);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stats, setStats] = useState<Stats>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initial);
 
   const fetchLatest = async () => {
     const { data, error } = await supabase
@@ -85,7 +89,8 @@ export default function Home() {
   };
 
   useEffect(() => {
-    void fetchLatest();
+    if (!initial) void fetchLatest();
+    else { void loadCategories(); void loadStats(); }
   }, []);
 
   /** Base games that actually exist in the catalogue, with counts. */
@@ -142,10 +147,11 @@ export default function Home() {
 
         {/* ⚡ ENERGY TICKER */}
         <div className="border-y border-white/10 bg-ink-900/60 py-3">
-          <Marquee items={TICKER} label="PokéSmith — ROM hacks, cheats, emulators and patching" />
+          <Marquee items={TICKER} label="PokéSmith — ROM hacks, cheats, emulators and game guides" />
         </div>
 
         <FeaturedBand hacks={latestHacks} loading={loading} />
+        <FieldGuideBand />
         <CategoryBand categories={categories} loading={loading} />
         <ProcessBand />
         <StudioBand />

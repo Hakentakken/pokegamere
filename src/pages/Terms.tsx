@@ -4,7 +4,7 @@ import LegalSections, { type LegalSection } from "../components/LegalSections";
 import Reveal from "../components/Reveal";
 import { useSeo } from "../lib/seo";
 
-const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
+const CONTACT = "mailto:pokesmithoriginal@gmail.com";
 
 const SECTIONS: LegalSection[] = [
   {
@@ -13,17 +13,19 @@ const SECTIONS: LegalSection[] = [
       <p>
         PokéSmith is a fan-made catalogue of Pokémon ROM hacks, cheat codes and emulator
         downloads. It is a hobby project maintained for fans. The site links to content that
-        already exists elsewhere; it is not a commercial service.
+        already exists elsewhere; it may display advertising.
       </p>
     ),
   },
   {
-    heading: "We do not host game files",
+    heading: "External releases and file formats",
     body: (
       <p>
-        PokéSmith does not host, upload or distribute commercial ROMs, ISOs or game
-        cartridges. Download links point to third-party sources, and users are responsible for
-        obtaining any base game legally through their own copy.
+        Download links on PokéSmith point to external sources. The catalogue includes patch
+        files, standalone fan games and patched ROM files. These formats are different:
+        a patched ROM can contain original game data as well as a creator’s modifications.
+        A listing, creator credit or external hosting location does not establish permission
+        to redistribute all material in a release.
       </p>
     ),
   },
@@ -33,8 +35,9 @@ const SECTIONS: LegalSection[] = [
       <p>
         Pokémon and related names and assets belong to their respective owners. This project is
         unofficial and is not affiliated with, endorsed by, or sponsored by Nintendo, Game Freak,
-        The Pokémon Company or any other rights holder. All listed hacks, patches and guides remain
-        the work of their original creators, who retain copyright in them.
+        The Pokémon Company or any other rights holder. Credits identify the listed project’s
+        creator; they do not imply that the creator owns all underlying game assets or that
+        the original rights holders have endorsed the project.
       </p>
     ),
   },
@@ -42,9 +45,11 @@ const SECTIONS: LegalSection[] = [
     heading: "Downloads, patches and your device",
     body: (
       <p>
-        Patch files and third-party downloads are provided as-is. Applying a patch requires your
-        own legally obtained base game, and any software you download is used at your own risk.
-        Check local law before downloading or playing any modification.
+        Read the source’s release notes, file format and permissions before downloading.
+        A patch generally requires a specified base-game version; a standalone fan game has
+        its own system requirements. PokéSmith does not provide a blanket legal or safety
+        certification for linked releases. Obtain any required base game lawfully and check
+        the permissions and laws applicable to your use.
       </p>
     ),
   },
@@ -71,14 +76,14 @@ const SECTIONS: LegalSection[] = [
     heading: "Contact",
     body: (
       <p>
-        Questions, takedown requests or corrections can be raised through our YouTube channel:{" "}
+        Questions, takedown requests or corrections can be raised by email:{" "}
         <a
-          href={YOUTUBE}
+          href={CONTACT}
           target="_blank"
           rel="noreferrer"
           className="link-underline text-brand-400 transition-colors duration-300 hover:text-brand-300"
         >
-          {YOUTUBE}
+          pokesmithoriginal@gmail.com
         </a>
         .
       </p>
@@ -111,21 +116,15 @@ export default function Terms() {
       <div className="shell pb-24">
         <Reveal delay={0.1}>
           <p className="type-lede max-w-2xl">
-            PokéSmith is a fan project. It indexes work created by other people and never hosts
-            commercial game files.
+            PokéSmith is an independent fan project for discovering and understanding fan-made
+            games and modifications. This page explains how listings, external releases and
+            rights-related requests are handled.
           </p>
         </Reveal>
 
         <LegalSections sections={SECTIONS} />
 
-        <Reveal delay={0.2}>
-          <p className="mt-12 max-w-2xl rounded-xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-relaxed text-neutral-500">
-            <strong className="font-semibold text-neutral-300">Note for reviewers:</strong> the
-            wording above is an honest description of this project's behaviour, written without
-            legal input. It is a starting structure only — have it reviewed before relying on it
-            for any compliance purpose.
-          </p>
-        </Reveal>
+
       </div>
     </PageWrapper>
   );

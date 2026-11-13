@@ -4,15 +4,14 @@ import LegalSections, { type LegalSection } from "../components/LegalSections";
 import CtaBand from "../components/CtaBand";
 import { useSeo } from "../lib/seo";
 
-const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
+const CONTACT = "mailto:pokesmithoriginal@gmail.com";
 
 const SECTIONS: LegalSection[] = [
   {
     heading: "Questions about a hack",
     body: (
       <p>
-        Ask in the video comments on the channel — most hack questions get answered there,
-        usually within a few days.
+        Email the game title, version, device and the issue you encountered. Do not attach game files or passwords.
       </p>
     ),
   },
@@ -20,8 +19,8 @@ const SECTIONS: LegalSection[] = [
     heading: "Broken or wrong links",
     body: (
       <p>
-        Third-party download links go out of date. Leave a comment with the hack name and the
-        link that stopped working and it will be fixed or removed.
+        Third-party download links go out of date. Email the game name, the PokeSmith page URL and the
+        link that stopped working so we can investigate.
       </p>
     ),
   },
@@ -29,8 +28,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Suggestions and corrections",
     body: (
       <p>
-        Missing a hack, a wrong description, or a feature list that needs fixing? Send a
-        message and it will be picked up.
+        Missing a hack, a wrong description, or a feature list that needs fixing? Email your correction and a source we can check.
       </p>
     ),
   },
@@ -38,8 +36,7 @@ const SECTIONS: LegalSection[] = [
     heading: "Takedown requests",
     body: (
       <p>
-        If you are a rights holder and want something removed, use the channel below and
-        include the specific page so it can be handled quickly.
+        If you are a rights holder and want something removed, email us with the page URL, the work concerned, your relationship to it and a way to contact you. Do not include sensitive documents in public comments.
       </p>
     ),
   },
@@ -59,7 +56,7 @@ export default function Contact() {
         lede="Have questions, suggestions, or want to collaborate?"
       >
         <a
-          href={YOUTUBE}
+          href={CONTACT}
           target="_blank"
           rel="noreferrer"
           className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-3 font-display font-semibold text-white transition-[border-color,background-color,transform] duration-500 ease-cinematic hover:-translate-y-0.5 hover:border-brand/50 hover:bg-white/10"
@@ -68,7 +65,7 @@ export default function Contact() {
             className="h-2 w-2 rounded-full bg-brand-500 transition-transform duration-500 group-hover:scale-125"
             aria-hidden="true"
           />
-          @InvincibleGreninjaIsHere
+          pokesmithoriginal@gmail.com
         </a>
       </PageHero>
 

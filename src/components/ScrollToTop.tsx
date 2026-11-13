@@ -18,11 +18,17 @@ import { useLocation } from "react-router-dom";
  * deep links and refresh, and never gates rendering.
  */
 export default function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
   useLayoutEffect(() => {
+    if (hash) {
+      let target = hash.slice(1);
+      try { target = decodeURIComponent(target); } catch { /* Keep malformed fragments literal. */ }
+      const section = document.getElementById(target);
+      if (section) { section.scrollIntoView({ behavior: 'instant', block: 'start' }); return; }
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
-  }, [pathname]);
+  }, [pathname, hash]);
 
   return null;
 }

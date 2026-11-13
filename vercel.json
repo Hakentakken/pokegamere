@@ -1,17 +1,50 @@
 {
-    "headers": [
-      {
-        "source": "/ads.txt",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "text/plain; charset=utf-8"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      { "source": "/ads.txt", "destination": "/ads.txt" },
-      { "source": "/((?!ads\\.txt$).*)", "destination": "/" }
-    ]
-  }
+  "headers": [
+    {
+      "source": "/ads.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/sitemap-hacks.xml",
+      "destination": "/api/sitemap-hacks"
+    },
+    {
+      "source": "/",
+      "destination": "/api/page"
+    },
+    {
+      "source": "/((?!api/|assets/|rom-patcher-js/|webapp/|.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/api/page"
+    }
+  ],
+  "functions": {
+    "api/page.ts": {
+      "includeFiles": "{dist,server-dist}/**"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.pokesmith.com"
+        }
+      ],
+      "destination": "https://pokesmith.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/patcher",
+      "destination": "/qa",
+      "permanent": false
+    }
+  ]
+}

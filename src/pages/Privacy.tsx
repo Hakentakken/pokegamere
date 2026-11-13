@@ -3,70 +3,20 @@ import PageHero from "../components/PageHero";
 import LegalSections, { type LegalSection } from "../components/LegalSections";
 import { useSeo } from "../lib/seo";
 
-const YOUTUBE = "https://www.youtube.com/@InvincibleGreninjaIsHere";
-
 const SECTIONS: LegalSection[] = [
-  {
-    heading: "Cookies",
-    body: (
-      <p>
-        We may use cookies to improve user experience and for analytics. You can block or
-        delete cookies in your browser settings; the site will still work, though some
-        preferences will not be remembered.
-      </p>
-    ),
-  },
-  {
-    heading: "Third-party ads",
-    body: (
-      <p>
-        We may display ads through services such as Google AdSense, which may use cookies to
-        personalise ads. Ad partners, including Google, may use cookies to serve ads based on
-        your visits to this and other sites.
-      </p>
-    ),
-  },
-  {
-    heading: "Analytics",
-    body: (
-      <p>
-        This site uses Google Analytics to understand which pages are useful. It records
-        aggregate, non-personal information about visits — never anything you type.
-      </p>
-    ),
-  },
-  {
-    heading: "Accounts",
-    body: (
-      <p>
-        The admin area requires a sign-in. Credentials are handled by the authentication
-        provider and are never stored by this site.
-      </p>
-    ),
-  },
-  {
-    heading: "Contact",
-    body: (
-      <p>
-        For any questions, contact us via our YouTube channel:{" "}
-        <a
-          href={YOUTUBE}
-          target="_blank"
-          rel="noreferrer"
-          className="link-underline text-brand-400 transition-colors duration-300 hover:text-brand-300"
-        >
-          {YOUTUBE}
-        </a>
-        .
-      </p>
-    ),
-  },
+  { heading: "Who operates this site", body: <p>PokeSmith is an independent fan project. Contact pokesmithoriginal@gmail.com with privacy questions or a request concerning information you have sent us.</p> },
+  { heading: "Visits and analytics", body: <p>Google Analytics is used to measure visits and page interactions. It can process browser and device details, page URLs, referral information and cookie identifiers. Technical request information is also processed by our hosting and database providers to deliver the site. These services should not be treated as anonymous.</p> },
+  { heading: "Cookies and local storage", body: <p>Your light or dark theme preference is saved in browser local storage. Administrator authentication uses browser storage to maintain a session. Google Analytics and, when advertising is served, Google advertising services may use cookies or similar identifiers. Browser settings let you clear storage or block cookies.</p> },
+  { heading: "Advertising", body: <p>The site includes Google AdSense code. When ads are served, Google and its partners may use cookies to show ads based on visits to this and other sites. You can manage personalized advertising in <a className="link-underline text-brand-400" href="https://myadcenter.google.com/">Google My Ad Center</a>. See <a className="link-underline text-brand-400" href="https://policies.google.com/technologies/partner-sites">how Google uses information from partner sites</a>.</p> },
+  { heading: "External content and downloads", body: <p>Images may load from external image hosts, and the homepage contains a YouTube video. Those providers receive requests from your browser. Download links take you to third-party websites with their own privacy practices; this policy does not govern those sites.</p> },
+  { heading: "Administrator accounts", body: <p>Public browsing does not require an account. Administrator sign-in is handled by Supabase Authentication, which processes account and session information. Never send your password or access tokens to our contact address.</p> },
+  { heading: "Messages and requests", body: <p>If you email us, your address and message are used to respond and investigate the issue. Avoid attaching sensitive personal information. To ask for a correction or deletion of information you supplied, email <a className="link-underline text-brand-400" href="mailto:pokesmithoriginal@gmail.com">pokesmithoriginal@gmail.com</a>. Provider-managed information may also require a request to that provider.</p> },
 ];
 
 export default function Privacy() {
   useSeo({
     title: "Privacy Policy",
-    description: "PokéSmith respects your privacy. We do not collect personal data unless necessary.",
+    description: "How site storage, analytics, advertising and contact messages are handled.",
     canonicalPath: "/privacy",
   });
   return (
@@ -74,7 +24,7 @@ export default function Privacy() {
       <PageHero
         eyebrow="Legal"
         title="Privacy Policy"
-        lede="PokéSmith respects your privacy. We do not collect personal data unless necessary."
+        lede="How site storage, analytics, advertising and contact messages are handled."
       />
 
       <div className="shell pb-24">

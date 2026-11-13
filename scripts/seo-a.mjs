@@ -21,7 +21,7 @@ const urlCount = (s) => (s.match(/<url>/g) || []).length
 const locs = (s) => (s.match(/<loc>([^<]+)<\/loc>/g) || []).map((m) => m.slice(5, -6))
 export const staticLocs = locs(sitemapXml)
 export const hackLocs = locs(hacksSitemap)
-check('sitemap.xml has 10 static routes', urlCount(sitemapXml) === 10, 'found ' + urlCount(sitemapXml))
+check('sitemap.xml has 11 static routes', urlCount(sitemapXml) === 11, 'found ' + urlCount(sitemapXml))
 check('sitemap-hacks.xml is non-empty', urlCount(hacksSitemap) > 0, 'found ' + urlCount(hacksSitemap))
 check('sitemap.xml has no fabricated lastmod', !/<lastmod>/.test(sitemapXml))
 const hackLastmods = (hacksSitemap.match(/<lastmod>([^<]+)<\/lastmod>/g) || []).map((m) => m.slice(9, -10))

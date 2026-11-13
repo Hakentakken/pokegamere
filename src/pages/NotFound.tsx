@@ -8,7 +8,6 @@ import { useSeo } from "../lib/seo";
 
 const SUGGESTIONS = [
   { to: "/hacks", label: "ROM Hacks" },
-  { to: "/patcher", label: "ROM Patcher" },
   { to: "/cheats", label: "Cheats" },
   { to: "/emulators", label: "Emulators" },
 ];

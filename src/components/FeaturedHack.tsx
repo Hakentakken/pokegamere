@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { slugForId } from "../lib/hackSlugs";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Parallax from "./Parallax";
@@ -38,7 +40,9 @@ const FIELDS = ["Base", "Platform", "Status", "Rating"];
  * the section passes.
  */
 export default function FeaturedHack({ hack, index = "01 — Featured" }: Props) {
-  const to = hack.slug ? `/hacks/${hack.slug}` : `/hack/${hack.id}`;
+  const [resolvedSlug, setResolvedSlug] = useState(hack.slug);
+  useEffect(() => { let active = true; if (!hack.slug) void slugForId(hack.id, hack.title).then(value => { if (active) setResolvedSlug(value); }); return () => { active = false; }; }, [hack.id, hack.title, hack.slug]);
+  const to = (hack.slug || resolvedSlug) ? `/hacks/${hack.slug || resolvedSlug}` : `/hack/${hack.id}`;
   const values = [hack.baseGame, hack.platform, hack.status, `${hack.rating || 0} / 5`];
 
   return (
@@ -121,8 +125,8 @@ export default function FeaturedHack({ hack, index = "01 — Featured" }: Props)
                 <path d="M2 7h10M8.5 3.5 12 7l-3.5 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
-            <Link to="/patcher" className="btn-hero-ghost">
-              ROM Patcher
+            <Link to="/qa" className="btn-hero-ghost">
+              Getting started
             </Link>
           </div>
         </Reveal>

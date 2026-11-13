@@ -1,6 +1,41 @@
 # PokeSmith (pokegamere)
 
-React 19 + TypeScript + Vite + Tailwind CSS single-page app, backed by **Supabase** (auth, database, storage).
+React 19 + TypeScript + Vite + Tailwind CSS, backed by **Supabase** (auth, database, storage). Public pages use server-rendered HTML on Vercel and React hydration for navigation and interaction.
+
+## Search visibility and publishing
+
+`npm run build` produces the browser assets in `dist/` and the server renderer in `server-dist/`. Deploy both through the included Vercel configuration: a static-only upload of `dist/` does **not** provide server rendering or the live sitemap. No database migration is required. Server functions use the public, RLS-filtered Supabase key, never a service-role key.
+
+- `api/page.ts` serves the page content, unique title, description, canonical and JSON-LD in the initial response. Game and catalogue pages read current public records. It returns permanent redirects for legacy UUID URLs, 404 for missing games, and a non-cacheable 503 for upstream failures.
+- `/sitemap-hacks.xml` reads current public records with pagination. Both the sitemap and page HTML have a five-minute edge cache. Newly published games become discoverable without a rebuild; Google still decides when to crawl and index them. Keep published titles stable: slugs are derived from titles, and a title edit changes the URL.
+- The patcher implementation and assets are retained, but navigation no longer links to it and `/patcher` temporarily redirects to `/qa`.
+- Local `npm run dev` and ordinary `npm run preview` are client-only. To exercise the production HTML and HTTP behavior, run `npm run build`, then `npm run preview:seo` (http://127.0.0.1:4175).
+- Run `npm run check:seo`, then `npm run check:seo-server`. `node scripts/test-sitemap-endpoint.mjs` checks the real live database against the sitemap; `npm run audit:content` identifies catalogue entries needing editorial attention.
+
+### Search Console from this workspace
+
+The VS Code Google Search Console MCP extension stores credentials outside this repository. The local fallback utility reads its ADC file without printing tokens:
+
+```bash
+npm run search-console -- sites
+npm run search-console -- sitemaps sc-domain:pokesmith.com
+npm run search-console -- performance sc-domain:pokesmith.com
+npm run search-console -- inspect sc-domain:pokesmith.com https://pokesmith.com/hacks/pokemon-z-english
+```
+
+Set `GSC_CREDENTIALS_PATH` to the extension's ADC file if your storage location differs. Reauthenticate through the extension if Google revokes or expires its refresh token. The utility never uses Google's restricted Indexing API for ordinary game pages.
+
+After deployment has been verified, submit the two existing sitemap URLs using Search Console or the utility's `submit` command. Do not repeatedly resubmit unchanged sitemaps. Do not commit credentials or deploy the local admin utility as a public API.
+
+### Editorial and launch checks
+
+The homepage now links to `/guides`, an original player guide covering release selection, patch/standalone/patched-ROM formats, source checks and save backups. The public policies disclose the catalogue's mixed external download formats. Download panels display the actual destination hostname without claiming it is a verified creator source. Per-game format and redistribution permissions remain an editorial check; they are not inferred from a file-hosting domain.
+
+Public contact: **pokesmithoriginal@gmail.com**. Ratings are administrator-entered catalogue ratings, not verified player-review averages. The privacy page describes existing Analytics, AdSense, embeds, storage and contact handling; it is not a substitute for configuring any consent requirements applicable to actual visitors.
+
+The November 13, 2026 audit found 81 public games and 55 descriptions shorter than 100 words. This is an editorial review indicator, not a Google word-count rule. Add original, source-checked information and verify linked file rights before requesting another AdSense review; layout and metadata changes alone cannot guarantee approval.
+
+No paid service, billing activation, quota purchase or scheduled indexing job is needed by this implementation. Hosting requests still consume the existing plan's resources. Verify that plan and its spending controls before production deployment; do not upgrade or enable overages to deploy this change.
 
 ## Local setup
 

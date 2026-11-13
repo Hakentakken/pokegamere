@@ -23,23 +23,21 @@ export type DetailHack = {
 
 type Props = {
   hack: DetailHack;
-  downloading: boolean;
-  onDownload: () => void;
 };
 
 /**
  * Key art for a single game.
  *
  * The cover fills the frame and drifts behind the title, so the page opens like
- * a release splash rather than a record row. The download action lives here —
- * first and last, the way a store page would.
+ * a release splash rather than a record row. Section links help readers find
+ * screenshots, the overview and the download information below.
  */
-export default function DetailHero({ hack, downloading, onDownload }: Props) {
+export default function DetailHero({ hack }: Props) {
   const fields = [
     { term: "Base game", value: hack.base_game || "—" },
     { term: "Platform", value: hack.platform || "—" },
     { term: "Status", value: hack.status || "—" },
-    { term: "Rating", value: `${hack.rating || 0} / 5` },
+    { term: "Catalogue rating", value: `${hack.rating || 0} / 5` },
   ];
 
   return (
@@ -124,29 +122,11 @@ export default function DetailHero({ hack, downloading, onDownload }: Props) {
                 ))}
               </dl>
 
-              <div className="mt-7">
-                {hack.download_link ? (
-                  <button onClick={onDownload} className="btn-hero w-full group">
-                    {downloading ? "Preparing Download..." : "Download ROM / Patch"}
-                    {!downloading && (
-                      <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="transition-transform duration-300 group-hover:translate-y-0.5">
-                        <path d="M7 1.5v9M3.5 7 7 10.5 10.5 7M2 12.5h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                ) : (
-                  <p className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-neutral-400">
-                    🚧 No download link
-                  </p>
-                )}
-
-                <Link
-                  to="/patcher"
-                  className="btn-hero-ghost mt-3 w-full"
-                >
-                  Open ROM Patcher
-                </Link>
-              </div>
+              <nav aria-label="On this page" className="mt-7 flex flex-wrap gap-3 text-sm">
+                <a href="#screenshots" className="btn-hero-ghost">Screenshots</a>
+                <a href="#overview" className="btn-hero-ghost">Overview</a>
+                <a href="#downloads" className="link-underline self-center text-neutral-300">Setup &amp; download</a>
+              </nav>
             </div>
           </Reveal>
         </div>

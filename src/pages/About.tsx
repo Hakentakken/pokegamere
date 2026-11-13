@@ -21,18 +21,20 @@ const SECTIONS: LegalSection[] = [
     heading: "What we do",
     body: (
       <p>
-        We collect and organize ROM hacks so players can easily explore new adventures —
-        grouping them by base game, documenting what makes each one different, and linking
-        straight to the patch, the screenshots and the emulator you need.
+        We organize fan projects by base game and platform so players can compare screenshots,
+        features and release status. Our player guide explains file formats, compatibility and
+        save backups, while each listing brings together the available details about a project.
       </p>
     ),
   },
   {
-    heading: "What we don't do",
+    heading: "Understanding external releases",
     body: (
       <p>
-        We do not host commercial game files. Every download link points to a third-party
-        source, and you are responsible for obtaining the base game legally yourself.
+        Downloads open external sources. The catalogue includes patches, standalone fan games
+        and patched ROM files, so check each release’s format and requirements. We credit listed
+        creators without claiming ownership of their work or certifying the distribution rights
+        of every linked file.
       </p>
     ),
   },
@@ -76,7 +78,7 @@ export default function About() {
       <CtaBand
         eyebrow="See it in action"
         title="Take a look around"
-        lede="Every hack page has screenshots, a patch link and the steps to get it running."
+        lede="Compare game screenshots, features and setup information before choosing your next adventure."
         primary={{ label: "Browse ROM Hacks", to: "/hacks" }}
         secondary={{ label: "Read the Q&A", to: "/qa" }}
       />

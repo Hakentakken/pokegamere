@@ -10,7 +10,10 @@ import { supabase } from "../lib/supabase";
 import { useSeo } from "../lib/seo";
 import { DUR, EASE } from "../lib/motion";
 
+import { useCatalogue, catalogueCards } from "../lib/catalogue";
+
 type Hack = {
+  slug?: string;
   id: string;
   title: string;
   author: string;
@@ -61,14 +64,15 @@ const uploadTime = (hack: Hack) => {
  * description, author, platform, status) as the visitor types.
  */
 export default function Hacks() {
+  const initial = useCatalogue();
   useSeo({
     title: "Browse Pokémon ROM Hacks",
     description:
       "Browse the full catalogue of fan-made Pokémon ROM hacks by base game, rating and release date.",
     canonicalPath: "/hacks",
   });
-  const [hacks, setHacks] = useState<Hack[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [hacks, setHacks] = useState<Hack[]>(() => initial ? catalogueCards(initial) : []);
+  const [loading, setLoading] = useState(!initial);
   const [searchParams] = useSearchParams();
   const [filter, setFilter] = useState(searchParams.get("base") || "All");
   const [sort, setSort] = useState("name");
@@ -112,7 +116,7 @@ export default function Hacks() {
   };
 
   useEffect(() => {
-    void fetchHacks();
+    if (!initial) void fetchHacks();
   }, []);
 
   /** Base games present in the catalogue, so the filter never hides a game. */
@@ -296,7 +300,7 @@ export default function Hacks() {
         title="Get the basics first"
         lede="Patching takes two minutes once you know how. The Q&A covers the rest."
         primary={{ label: "Read the Q&A", to: "/qa" }}
-        secondary={{ label: "Open the patcher", to: "/patcher" }}
+        secondary={{ label: "Getting started", to: "/qa" }}
       />
     </PageWrapper>
   );

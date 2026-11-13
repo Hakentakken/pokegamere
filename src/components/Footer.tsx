@@ -10,9 +10,9 @@ const COLUMNS = [
     title: "Explore",
     links: [
       { to: "/hacks", label: "ROM Hacks" },
+      { to: "/guides", label: "Player guide" },
       { to: "/cheats", label: "Cheats" },
       { to: "/emulators", label: "Emulators" },
-      { to: "/patcher", label: "Patcher" },
     ],
   },
   {
@@ -21,6 +21,7 @@ const COLUMNS = [
       { to: "/qa", label: "Q&A" },
       { to: "/about", label: "About" },
       { to: "/contact", label: "Contact" },
+      { to: "/editorial", label: "Editorial standards" },
       { to: "/privacy", label: "Privacy" },
       { to: "/terms", label: "Terms & Disclaimer" },
     ],
@@ -119,7 +120,7 @@ export default function Footer() {
         >
           <p className="font-semibold text-neutral-300">PokéSmith</p>
           <p className="text-xs text-neutral-500">
-            This site does not host ROMs. All rights belong to respective owners.
+            Independent fan project. Releases link to external sources. Not affiliated with Nintendo or The Pokémon Company.
           </p>
           <p className="font-mono text-[11px] tracking-widest text-neutral-600 uppercase">
             © {new Date().getFullYear()}

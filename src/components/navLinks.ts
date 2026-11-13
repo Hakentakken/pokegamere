@@ -7,9 +7,9 @@ export type SessionUser = { id?: string } | null;
 export const PRIMARY: NavItem[] = [
   { to: "/", label: "Home" },
   { to: "/hacks", label: "Hacks" },
+  { to: "/guides", label: "Guides" },
   { to: "/cheats", label: "Cheats" },
   { to: "/emulators", label: "Emulators" },
-  { to: "/patcher", label: "Patcher" },
   { to: "/qa", label: "Q&A" },
 ];
 

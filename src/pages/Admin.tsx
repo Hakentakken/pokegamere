@@ -1,3 +1,4 @@
+import PublishingChecklist from "../components/PublishingChecklist";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -156,6 +157,7 @@ export default function Admin() {
   // 💾 SAVE EDIT
   const saveEdit = async () => {
     if (!editingHack) return;
+    if (!editTitle.trim() || !editDescription.trim()) { alert("A game title and description are required."); return; }
 
     const typedCover = editCoverUrl.trim();
     if (!editCoverFile && typedCover !== "" && !isRenderableImageRef(typedCover)) {
@@ -245,6 +247,7 @@ export default function Admin() {
 
   // 🚀 UPLOAD HACK
   const uploadHack = async () => {
+    if (!title.trim() || !description.trim()) { alert("Add a game title and an original description before publishing."); return; }
     const typedCover = coverUrl.trim();
 
     if (!coverFile && !typedCover) {
@@ -452,6 +455,7 @@ export default function Admin() {
                     onChange={(e) => setEditRating(parseFloat(e.target.value))} className={inputCls} />
 
                   <label className={labelCls}>Description</label>
+                  <PublishingChecklist title={editTitle} description={editDescription} author={editAuthor} baseGame={editBaseGame} platform={editPlatform} features={editFeatures} />
                   <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)}
                     rows={4} className={inputCls} />
 
@@ -622,6 +626,7 @@ export default function Admin() {
                 onChange={(e) => setRating(parseFloat(e.target.value))} className={inputCls} />
 
               <label className={labelCls}>Description</label>
+              <PublishingChecklist title={title} description={description} author={author} baseGame={baseGame} platform={platform} features={features} />
               <textarea value={description} placeholder="Describe the hack..."
                 onChange={(e) => setDescription(e.target.value)} rows={4} className={inputCls} />
 

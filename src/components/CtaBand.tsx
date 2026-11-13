@@ -27,7 +27,7 @@ function isExternal(to: string) {
 export default function CtaBand({
   eyebrow = "Your adventure starts here",
   title = "Ready to play something new?",
-  lede = "Browse the library, grab a patch, and get your emulator running in minutes.",
+  lede = "Compare the screenshots, explore the features and check the release details before starting your next adventure.",
   primary = { label: "Browse ROM Hacks", to: "/hacks" },
   secondary = { label: "Need a hand?", to: "/qa" },
 }: Props) {

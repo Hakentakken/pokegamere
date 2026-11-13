@@ -112,7 +112,12 @@ async function main() {
 
   const commonHeaders = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
 
-  const hacks = await fetchJson(SB_URL + '/rest/v1/hacks?select=id,title,created_at&order=created_at.asc', commonHeaders)
+  const hacks = []
+  for (let offset = 0; ; offset += 500) {
+    const batch = await fetchJson(SB_URL + '/rest/v1/hacks?select=id,title,created_at&order=created_at.asc,id.asc&limit=500&offset=' + offset, commonHeaders)
+    hacks.push(...batch)
+    if (batch.length < 500) break
+  }
   const index = buildSlugIndex(hacks || [])
 
   const staticRoutes = [
@@ -120,7 +125,8 @@ async function main() {
     '/hacks',
     '/cheats',
     '/emulators',
-    '/patcher',
+    '/editorial',
+    '/guides',
     '/qa',
     '/about',
     '/privacy',

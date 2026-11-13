@@ -1,52 +1,12 @@
 const faqs = [
-    {
-      id: 1,
-      category: "Getting Started",
-      question: "What is a ROM hack?",
-      answer: "A ROM hack is a modified version of a Pokémon game created by fans."
-    },
-    {
-      id: 2,
-      category: "Getting Started",
-      question: "Do I need an emulator?",
-      answer: "Yes, you need an emulator to run ROM hacks on your device."
-    },
-    {
-      id: 3,
-      category: "Patching",
-      question: "What is a patch file?",
-      answer: "A patch file contains changes applied to a base ROM."
-    },
-    {
-      id: 4,
-      category: "Patching",
-      question: "How do I patch a ROM?",
-      answer: "Use our patcher tool by uploading ROM and patch files."
-    },
-    {
-      id: 5,
-      category: "Emulators",
-      question: "Best emulator for GBA?",
-      answer: "mGBA and VisualBoyAdvance are popular choices."
-    },
-    {
-      id: 6,
-      category: "Emulators",
-      question: "Can I play on mobile?",
-      answer: "Yes, many emulators are available for Android and iOS."
-    },
-    {
-      id: 7,
-      category: "Cheats",
-      question: "Are cheats safe?",
-      answer: "Yes, but they may affect gameplay experience."
-    },
-    {
-      id: 8,
-      category: "Cheats",
-      question: "Why is my cheat not working?",
-      answer: "Make sure you are using the correct code for your game version."
-    }
-  ];
-  
-  export default faqs;
+  { id: 1, category: "Getting Started", question: "How do I choose a ROM hack?", answer: "Start with the base game and platform, then compare the description, features and screenshots. A completed release and an unfinished beta can offer very different experiences. Check the creator's release notes for story progress, known issues and supported versions before committing to a save." },
+  { id: 2, category: "Getting Started", question: "Is a ROM hack the same as a standalone fan game?", answer: "No. A ROM hack changes an existing game's data and usually requires a compatible base-game file. A standalone fan game runs using its own engine or runtime. Platform and setup requirements matter more than the title: follow the instructions for the exact release you choose." },
+  { id: 3, category: "Patching", question: "What is a patch file?", answer: "A patch records changes to a particular original file. Common formats include IPS, UPS and BPS. It usually cannot run in an emulator by itself. You need the base-game version specified by the creator and a tool that supports the patch format. A patch is not a substitute for obtaining the base game lawfully." },
+  { id: 4, category: "Patching", question: "Why does patching fail or produce a black screen?", answer: "Check the required game, region and revision first. Similar file names do not prove that two ROMs are identical. Compare the checksum with the creator's instructions when one is supplied, extract compressed archives, and start from a clean base file. Do not stack patches unless the creator explicitly supports it. PokeSmith's browser patcher is currently unavailable." },
+  { id: 5, category: "Emulators", question: "How do I choose a compatible emulator?", answer: "Match the emulator to both the game system and your device's operating system. Check the project's official documentation for supported hardware and known limitations. Use official project sources, keep a backup of your save and avoid assuming that every emulator supports every fan modification." },
+  { id: 6, category: "Emulators", question: "Can I keep my save when updating a hack?", answer: "Sometimes, but compatibility depends on the release. Read the update notes before replacing files. Back up the ordinary in-game save and keep the previous version until you confirm the new release works. Emulator save states can depend on a specific version and should not be your only backup." },
+  { id: 7, category: "Cheats", question: "Can cheats damage a save?", answer: "Cheats can break events, inventory or progression, especially when a ROM hack changes the original game's memory layout. Back up your save, enable one code at a time and stop using it if you see unexpected behavior. A code for the base game is not automatically compatible with a hack." },
+  { id: 8, category: "Cheats", question: "Why is my cheat not working?", answer: "Confirm the game revision, emulator and code format. Some codes require a master code or a specific activation point, while others simply do not apply to modified games. Disable conflicting codes and consult the release documentation rather than combining unverified codes." },
+  { id: 9, category: "Getting Started", question: "How do I report a broken download or incorrect listing?", answer: "Email pokesmithoriginal@gmail.com with the PokeSmith page URL, game title and the detail that needs correction. Include an official release source if you have one. Do not attach commercial game files, passwords or other private information." },
+];
+export default faqs;
