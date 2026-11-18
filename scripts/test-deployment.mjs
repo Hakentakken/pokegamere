@@ -109,6 +109,7 @@ console.log('PASS: isolated production handlers render HTML without node_modules
   }
   assert.equal(resolve('/'), '/api/page');
   assert.equal(resolve('/sitemap-hacks.xml'), '/api/sitemap-hacks');
+  assert.equal(resolve('/feed.xml'), '/api/feed');
   assert.equal(resolve('/hacks/deployment-test-game'), '/api/page');
   assert.equal(resolve('/about'), '/api/page');
   assert.equal(resolve('/robots.txt'), 'static:/robots.txt');

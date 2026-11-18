@@ -10,6 +10,7 @@ import { parseTextList, serializeImageList, splitImageUrlInput } from "../lib/im
 import { DRIVE_PUBLIC_HINT, isRenderableImageRef } from "../lib/imageUrl";
 import { SPRING } from "../lib/motion";
 import { useSeo } from "../lib/seo";
+import { notifyDiscovery } from "../lib/notifyDiscovery";
 
 export default function Admin() {
   useSeo({
@@ -18,6 +19,17 @@ export default function Admin() {
   });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("hack");
+  const [discoveryNotice, setDiscoveryNotice] = useState("");
+
+  const notifyGameSaved = async () => {
+    setDiscoveryNotice("Game saved. Sending discovery notification...");
+    try {
+      const { data } = await supabase.auth.getSession();
+      setDiscoveryNotice(await notifyDiscovery(data.session?.access_token));
+    } catch {
+      setDiscoveryNotice("Game saved. Discovery notification is unavailable; the automatic sitemap still includes your game.");
+    }
+  };
 
   const [hacks, setHacks] = useState<any[]>([]);
   const [cheats, setCheats] = useState<any[]>([]);
@@ -214,6 +226,7 @@ export default function Admin() {
       setEditingHack(null);
       setEditCoverFile(null);
       fetchAll();
+      void notifyGameSaved();
     } catch (err) {
       console.error(err);
       alert("Update failed ❌");
@@ -307,6 +320,7 @@ export default function Admin() {
       setStatus(""); setRating(0); setDescription(""); setCoverFile(null);
       setCoverUrl(""); setDownloadLink(""); setScreenshots([""]); setFeatures([""]);
       fetchAll();
+      void notifyGameSaved();
     } catch (err) {
       console.error(err);
       alert("Upload failed ❌");
@@ -360,6 +374,7 @@ export default function Admin() {
   return (
     <PageWrapper>
       <div className="mx-auto max-w-6xl px-6 py-10">
+        {discoveryNotice && <p role="status" className="mb-6 rounded-lg border border-brand/30 bg-brand/5 p-4 text-sm text-neutral-300">{discoveryNotice}</p>}
 
         {/* HEADER */}
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-white/10 pb-6">

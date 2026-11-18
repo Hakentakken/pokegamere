@@ -10,7 +10,7 @@ The canonical host is `https://www.pokesmith.com`, matching the existing Vercel 
 
 The server renderer bundles its dependencies (`ssr.noExternal: true`). The page function loads that renderer dynamically, so relying on function tracing to discover external React/router dependencies caused production `ERR_MODULE_NOT_FOUND` failures. `scripts/test-deployment.mjs` runs the built handlers in a temporary directory without `node_modules` to catch this before deployment.
 
-Vercel uses explicit ordered `routes` so `/` and `/sitemap-hacks.xml` reach their functions **before** the filesystem phase. Ordinary rewrites lose to `dist/index.html` and the build-time sitemap, leaving the homepage without server-rendered content and the public game sitemap stale. Other static assets are served after these two overrides. Do not mix `routes` with top-level `rewrites`, `headers`, or `redirects`.
+Vercel uses explicit ordered `routes` so `/`, `/sitemap-hacks.xml` and `/feed.xml` reach their functions **before** the filesystem phase. Ordinary rewrites lose to `dist/index.html` and the build-time sitemap, leaving the homepage without server-rendered content and the public game sitemap stale. Other static assets are served after these overrides. Do not mix `routes` with top-level `rewrites`, `headers`, or `redirects`.
 
 - `api/page.ts` serves the page content, unique title, description, canonical and JSON-LD in the initial response. Game and catalogue pages read current public records. It returns permanent redirects for legacy UUID URLs, 404 for missing games, and a non-cacheable 503 for upstream failures.
 - `/sitemap-hacks.xml` reads current public records with pagination. Both the sitemap and page HTML have a five-minute edge cache. Newly published games become discoverable without a rebuild; Google still decides when to crawl and index them. Keep published titles stable: slugs are derived from titles, and a title edit changes the URL.
@@ -27,11 +27,20 @@ npm run search-console -- sites
 npm run search-console -- sitemaps sc-domain:pokesmith.com
 npm run search-console -- performance sc-domain:pokesmith.com
 npm run search-console -- inspect sc-domain:pokesmith.com https://www.pokesmith.com/hacks/pokemon-z-english
+npm run search-console -- audit sc-domain:pokesmith.com
 ```
 
 Set `GSC_CREDENTIALS_PATH` to the extension's ADC file if your storage location differs. Reauthenticate through the extension if Google revokes or expires its refresh token. The utility never uses Google's restricted Indexing API for ordinary game pages.
 
 After deployment has been verified, submit the two existing sitemap URLs using Search Console or the utility's `submit` command. Do not repeatedly resubmit unchanged sitemaps. Do not commit credentials or deploy the local admin utility as a public API.
+
+The `audit` command inspects every canonical URL in both current live sitemaps and saves per-URL results to the git-ignored `reports.local/indexing-audit.json`. It also checks game links in the catalogue HTML. It reads Google's historical index records; it does **not** request indexing or perform Google's live test. Missing sitemap associations in inspection results are recorded separately from actual sitemap membership. An inspection error is never counted as a non-indexed page.
+
+Publishing a publicly readable Supabase game automatically adds its URL to the dynamic sitemap and server-rendered catalogue, subject to the five-minute cache. No per-game submission is needed for discovery. Google chooses the crawl/indexing schedule. Its Indexing API is restricted to eligible job-posting and livestream content, not game pages; there is no supported bulk equivalent of the Search Console “Request indexing” button for these pages. Keep Google credentials out of the admin frontend and do not label a sitemap update or API inspection as successful indexing.
+
+`/feed.xml` is a live RSS feed of all public games, with canonical URLs and WebSub discovery links. It uses the same public database permissions and slug utility as the site, paginates beyond Supabase's response limit, and is not cached so the hub can fetch a newly published game immediately. Submit this feed URL once through Search Console as an additional sitemap; it is also advertised in `robots.txt` and the HTML head.
+
+After a successful game upload or edit through `/admin`, the app calls `/api/notify-discovery`. The server verifies the Supabase user session and broadcasts the fixed public feed URL to Google's PubSubHubbub hub. Google documents RSS/Atom plus WebSub as a supported discovery mechanism: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap. A successful notification means the hub accepted it, **not** that Google Search subscribed, crawled or indexed a game. Failures are shown separately from successful saves; the sitemap remains available. Direct database changes appear in the feed and sitemap automatically, but do not trigger the admin notification. No Google OAuth credentials, service-role key, database migration, paid indexing service or scheduled job is used.
 
 ### Editorial and launch checks
 

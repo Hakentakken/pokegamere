@@ -5,3 +5,4 @@ Disallow: /login
 
 Sitemap: https://www.pokesmith.com/sitemap.xml
 Sitemap: https://www.pokesmith.com/sitemap-hacks.xml
+Sitemap: https://www.pokesmith.com/feed.xml

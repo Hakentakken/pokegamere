@@ -13,6 +13,11 @@ async function main() {
   const token = await response.json();
   if (!response.ok) throw Error(`Google authorization: ${token.error}. Reconnect in the VS Code extension.`);
   const [command = 'sites', site = 'sc-domain:pokesmith.com', arg] = process.argv.slice(2);
+  if (command === 'audit') {
+    const { auditIndexing } = await import('./audit-indexing.mjs');
+    await auditIndexing(token.access_token, site);
+    return;
+  }
   const base = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(site)}`;
   let url, body, method = 'GET';
   if (command === 'sites') url = 'https://www.googleapis.com/webmasters/v3/sites';
@@ -26,7 +31,7 @@ async function main() {
     url = `${base}/searchAnalytics/query`; method = 'POST';
     const end = new Date(Date.now() - 3 * 86400000), start = new Date(end.getTime() - 27 * 86400000);
     body = { startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10), dimensions: ['page'], rowLimit: 50 };
-  } else throw Error('Usage: node scripts/search-console.mjs sites|sitemaps|performance|inspect|submit [property] [URL]');
+  } else throw Error('Usage: node scripts/search-console.mjs sites|sitemaps|performance|inspect|submit|audit [property] [URL]');
   const result = await fetch(url, { method, headers: { Authorization: `Bearer ${token.access_token}`, 'Content-Type': 'application/json' }, body: body && JSON.stringify(body), signal: AbortSignal.timeout(30000) });
   const value = await result.text();
   if (!result.ok) throw Error(`Search Console HTTP ${result.status}: ${value}`);
