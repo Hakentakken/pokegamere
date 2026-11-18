@@ -40,6 +40,11 @@ try {
   assert(!escaped.html.includes('<script>alert(1)'));
   assert(!escaped.head.includes('<script>alert(1)'));
   const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
+  const emulatorGuide = render('/emulators', null);
+  assert(emulatorGuide.html.includes('Choose by game format first'));
+  assert(emulatorGuide.html.includes('https://mgba.io/'));
+  assert(!emulatorGuide.html.includes('Coming Soon'));
+  assert(render('/cheats', null).html.includes('Check compatibility before enabling a code'));
   assert.equal(config.routes[0].dest, '/api/sitemap-hacks');
   // Production already redirects the apex domain to www in Vercel Domains.
   // A repository rule redirecting www back to apex caused an HTTP 307/308 loop.

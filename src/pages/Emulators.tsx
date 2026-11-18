@@ -7,6 +7,7 @@ import Skeleton from "../components/Skeleton";
 import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
 import { useSeo } from "../lib/seo";
+import EmulatorGuide from "../components/EmulatorGuide";
 
 export default function Emulators() {
   useSeo({
@@ -14,7 +15,7 @@ export default function Emulators() {
     description: "Everything you need to run your patched Pokémon adventures on any device.",
     canonicalPath: "/emulators",
   });
-  const [emulators, setEmulators] = useState<any[]>([]);
+  const [emulators, setEmulators] = useState<{ id: string; name: string; platform: string; description: string; download_link?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchEmulators = async () => {
@@ -38,21 +39,15 @@ export default function Emulators() {
         lede="Everything you need to run your patched adventures on any device."
       />
 
-      <div className="shell band-tight">
+      <EmulatorGuide />
+      <div className="shell pb-12">
         {loading ? (
           <div className="grid gap-6 md:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-64 w-full rounded-2xl" />
             ))}
           </div>
-        ) : emulators.length === 0 ? (
-          <div className="panel flex flex-col items-center gap-3 px-6 py-16 text-center">
-            <span className="text-3xl" aria-hidden="true">
-              🚧
-            </span>
-            <p className="text-lg text-neutral-400">Emulators Coming Soon...</p>
-          </div>
-        ) : (
+        ) : emulators.length === 0 ? null : (
           <div className="grid gap-6 md:grid-cols-3">
             {emulators.map((e, i) => (
               <motion.article
@@ -90,7 +85,7 @@ export default function Emulators() {
                     </a>
                   ) : (
                     <span className="block rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-center text-sm text-neutral-500">
-                      Link coming soon
+                      Consult the official project documentation before installing.
                     </span>
                   )}
                 </div>

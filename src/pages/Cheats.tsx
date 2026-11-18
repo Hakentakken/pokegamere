@@ -8,21 +8,26 @@ import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
 import { useSeo } from "../lib/seo";
 
+type Cheat = { id: string; title: string; game: string; code: string; description: string };
+const needsParameters = (code: string) => /\[[^\]]+\]/.test(code);
+
 export default function Cheats() {
   useSeo({
     title: "Pokémon Cheat Codes",
     description: "Search any game, copy a cheat code, and jump straight back into the action.",
     canonicalPath: "/cheats",
   });
-  const [cheats, setCheats] = useState<any[]>([]);
+  const [cheats, setCheats] = useState<Cheat[]>([]);
   const [search, setSearch] = useState("");
-  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCheats = async () => {
-    const { data } = await supabase
+    const { data, error: queryError } = await supabase
       .from("cheats")
       .select("id, created_at, title, game, code, description");
+    if (queryError) setError("The code catalogue could not be loaded. Please try again later.");
     setCheats(data || []);
     setLoading(false);
   };
@@ -37,8 +42,10 @@ export default function Cheats() {
       c.game?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleCopy = (c: { id: number; code: string }) => {
-    navigator.clipboard.writeText(c.code);
+  const handleCopy = async (c: Cheat) => {
+    if (needsParameters(c.code)) return;
+    try { await navigator.clipboard.writeText(c.code); }
+    catch { setError("Copy failed. Select the code and copy it manually."); return; }
     setCopiedId(c.id);
     window.setTimeout(() => {
       setCopiedId((prev) => (prev === c.id ? null : prev));
@@ -75,6 +82,14 @@ export default function Cheats() {
         </div>
       </PageHero>
 
+      <section className="shell pt-10 text-neutral-300 leading-relaxed">
+        <div className="max-w-3xl">
+          <h2 className="font-display text-2xl font-bold text-white">Check compatibility before enabling a code</h2>
+          <p className="mt-4">A hack based on FireRed or Emerald may change the memory locations that a cheat writes to. Sharing a base game does not establish compatibility. These entries are not a test of your specific release; check the creator's instructions and your emulator's supported code formats.</p>
+          <ol className="mt-4 list-decimal space-y-3 pl-6"><li>Make an in-game save and keep a separate backup. Never experiment on your only copy of a long playthrough.</li><li>Keep required lines together and enable one documented cheat at a time. Do not combine unrelated teleport destinations or item modifiers.</li><li>If the game freezes or inventory changes unexpectedly, disable the code and restart from the clean backup. Turning a code off may not undo changes already written to a save.</li><li>Bracketed parameters identify incomplete templates. Find the exact value and instructions from the original source before use; copying these entries is disabled.</li></ol>
+          {error && <p role="alert" className="mt-5 text-amber-300">{error}</p>}
+        </div>
+      </section>
       <div className="shell band-tight">
         {loading ? (
           <div className="space-y-4">
@@ -117,14 +132,15 @@ export default function Cheats() {
                   </div>
 
                   <button
-                    onClick={() => handleCopy(c)}
+                    onClick={() => void handleCopy(c)}
+                    disabled={needsParameters(c.code)}
                     className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition duration-300 ${
                       copiedId === c.id
                         ? "bg-emerald-500/90 text-oncolor"
                         : "bg-brand text-oncolor hover:bg-brand-600 hover:shadow-glow-sm"
                     }`}
                   >
-                    {copiedId === c.id ? "Copied ✓" : "Copy Code"}
+                    {needsParameters(c.code) ? "Incomplete template" : copiedId === c.id ? "Copied ✓" : "Copy Code"}
                   </button>
                 </div>
 
