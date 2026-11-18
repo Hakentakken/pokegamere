@@ -40,7 +40,7 @@ try {
   assert(!escaped.html.includes('<script>alert(1)'));
   assert(!escaped.head.includes('<script>alert(1)'));
   const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
-  assert.equal(config.rewrites[0].destination, '/api/sitemap-hacks');
+  assert.equal(config.routes[0].dest, '/api/sitemap-hacks');
   // Production already redirects the apex domain to www in Vercel Domains.
   // A repository rule redirecting www back to apex caused an HTTP 307/308 loop.
   for (const rule of config.redirects || []) {

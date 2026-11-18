@@ -8,6 +8,10 @@ The canonical host is `https://www.pokesmith.com`, matching the existing Vercel 
 
 `npm run build` produces the browser assets in `dist/` and the server renderer in `server-dist/`. Deploy both through the included Vercel configuration: a static-only upload of `dist/` does **not** provide server rendering or the live sitemap. No database migration is required. Server functions use the public, RLS-filtered Supabase key, never a service-role key.
 
+The server renderer bundles its dependencies (`ssr.noExternal: true`). The page function loads that renderer dynamically, so relying on function tracing to discover external React/router dependencies caused production `ERR_MODULE_NOT_FOUND` failures. `scripts/test-deployment.mjs` runs the built handlers in a temporary directory without `node_modules` to catch this before deployment.
+
+Vercel uses explicit ordered `routes` so `/` and `/sitemap-hacks.xml` reach their functions **before** the filesystem phase. Ordinary rewrites lose to `dist/index.html` and the build-time sitemap, leaving the homepage without server-rendered content and the public game sitemap stale. Other static assets are served after these two overrides. Do not mix `routes` with top-level `rewrites`, `headers`, or `redirects`.
+
 - `api/page.ts` serves the page content, unique title, description, canonical and JSON-LD in the initial response. Game and catalogue pages read current public records. It returns permanent redirects for legacy UUID URLs, 404 for missing games, and a non-cacheable 503 for upstream failures.
 - `/sitemap-hacks.xml` reads current public records with pagination. Both the sitemap and page HTML have a five-minute edge cache. Newly published games become discoverable without a rebuild; Google still decides when to crawl and index them. Keep published titles stable: slugs are derived from titles, and a title edit changes the URL.
 - The patcher implementation and assets are retained, but its public route is removed. `/patcher` returns a noindexed 404, including for direct visits; navigation and sitemaps do not link to it.

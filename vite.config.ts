@@ -9,6 +9,11 @@ export default defineConfig({
   plugins: [
     react(),
   ],
+  // api/page loads this generated renderer by a runtime path. Bundle its
+  // dependencies here so Vercel's function tracer cannot omit them.
+  ssr: {
+    noExternal: true,
+  },
   preview: {
     port: 4173,
     strictPort: true,

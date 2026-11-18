@@ -1,27 +1,24 @@
 {
-  "headers": [
+  "routes": [
     {
-      "source": "/ads.txt",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/plain; charset=utf-8"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/sitemap-hacks.xml",
-      "destination": "/api/sitemap-hacks"
+      "src": "/sitemap-hacks\\.xml",
+      "dest": "/api/sitemap-hacks"
     },
     {
-      "source": "/",
-      "destination": "/api/page"
+      "src": "/",
+      "dest": "/api/page"
     },
     {
-      "source": "/((?!api/|assets/|rom-patcher-js/|webapp/|.*\\.[a-zA-Z0-9]+$).*)",
-      "destination": "/api/page"
+      "src": "/ads\\.txt",
+      "headers": { "Content-Type": "text/plain; charset=utf-8" },
+      "continue": true
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/((?!api/|assets/|rom-patcher-js/|webapp/|.*\\.[a-zA-Z0-9]+$).*)",
+      "dest": "/api/page"
     }
   ],
   "functions": {
