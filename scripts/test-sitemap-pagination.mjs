@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
-const code = ts.transpileModule(readFileSync('api/sitemap-hacks.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const catalogueCode = ts.transpileModule(readFileSync('server/catalogue.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const catalogueUrl = 'data:text/javascript;base64,' + Buffer.from(catalogueCode).toString('base64');
+const code = ts.transpileModule(readFileSync('api/sitemap-hacks.ts', 'utf8').replace('../server/catalogue.js', catalogueUrl), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { default: handler } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
 const original = globalThis.fetch;
 const saved = { ...process.env };
@@ -20,7 +22,7 @@ try {
   assert.equal([...res.body.matchAll(/<loc>/g)].length, 1001);
   globalThis.fetch = async () => ({ ok: false, status: 503 });
   const failure = response(); await handler({}, failure);
-  assert.equal(failure.statusCode, 500);
+  assert.equal(failure.statusCode, 503);
   assert.equal(failure.headers['Cache-Control'], 'no-store');
   assert(!failure.body.includes('<urlset'));
   console.log('PASS: sitemap pagination covers 1,001 records; upstream failure is not cached or served as valid XML.');

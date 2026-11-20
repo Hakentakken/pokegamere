@@ -14,7 +14,9 @@
     },
     {
       "src": "/ads\\.txt",
-      "headers": { "Content-Type": "text/plain; charset=utf-8" },
+      "headers": {
+        "Content-Type": "text/plain; charset=utf-8"
+      },
       "continue": true
     },
     {
@@ -27,7 +29,14 @@
   ],
   "functions": {
     "api/page.ts": {
-      "includeFiles": "{dist,server-dist}/**"
+      "includeFiles": "{dist,server-dist}/**",
+      "maxDuration": 30
+    },
+    "api/sitemap-hacks.ts": {
+      "maxDuration": 30
+    },
+    "api/feed.ts": {
+      "maxDuration": 30
     }
   }
 }

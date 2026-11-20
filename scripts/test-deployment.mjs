@@ -48,10 +48,12 @@ const response = () => ({
 async function get(url, method = 'GET') {
   const res = response(); await page({ url, method }, res); return res;
 }
-for (const url of ['/', '/hacks', '/hacks/deployment-test-game', '/about']) {
+for (const url of ['/', '/hacks', '/hacks/deployment-test-game', '/about', '/qa', '/privacy']) {
   const res = await get(url);
   assert.equal(res.statusCode, 200, url + ': ' + res.body);
   assert.match(res.body, /<h1/);
+  assert.match(res.body, /name="robots" content="index, follow"/);
+  assert.equal([...res.body.matchAll(/rel="canonical"/g)].length, 1);
   assert(!res.body.includes('<div id="root"></div>'));
   assert(res.body.includes('href="https://www.pokesmith.com' + url + '"'));
   if (url.includes('deployment-test-game')) {
@@ -80,6 +82,13 @@ upstreamFails = true;
 const savedError = console.error; console.error = () => {};
 const failure = await get('/hacks/deployment-test-game');
 console.error = savedError;
+const retired = await get('/patcher');
+assert.equal(retired.statusCode, 404, 'Retired patcher must not become a 5xx even during database outages');
+assert.match(retired.body, /noindex/);
+let attempts = 0;
+globalThis.fetch = async () => (++attempts === 1 ? { ok: false, status: 503 } : { ok: true, json: async () => rows });
+assert.equal((await get('/hacks')).statusCode, 200, 'The reported catalogue page recovers from a transient database failure');
+assert.equal(attempts, 2);
 assert.equal(failure.statusCode, 503);
 assert.equal(failure.headers['Cache-Control'], 'no-store');
 assert.equal((await get('/about')).statusCode, 200, 'Static pages do not depend on database availability');

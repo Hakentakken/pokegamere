@@ -74,6 +74,16 @@ export function buildSlugIndex(rows: SlugRow[]): Map<string, string> {
   return index;
 }
 
+// Historical URLs observed in Search Console on 2026-11-20. Pin aliases to
+// public record IDs so future title edits still redirect to the same game.
+// Never infer replacements by fuzzy title matching or redirect removed games.
+export const LEGACY_HACK_SLUGS: Readonly<Record<string, string>> = {
+  'pokemon-hyper-emerald-lost-artifacts-v5-7': '36ad5e1b-8641-46e6-b557-df0b732a54c2',
+  'pokemon-quetzal-v0-9-0': '68e8392b-26db-4663-b63b-863404732d5b',
+  'pokemon-soulgold-v1-2': '67e6e781-b815-4e1a-b157-c26f2a808c28',
+  'pokemon-world-stadium-v3-5-6': '475e2133-999f-4439-be4e-f6ce1907b044',
+};
+
 /**
  * Canonical slug → id lookup, plus tolerant fallbacks so old or hand-edited
  * URLs keep resolving: case differences, and a duplicate's "-<id8>" suffix
@@ -89,6 +99,10 @@ export function findIdBySlug(
 
   // 1. Exact canonical match.
   for (const [id, slug] of index) if (slug === raw) return id;
+
+  // A legacy alias only resolves while its exact public record still exists.
+  const legacyId = Object.hasOwn(LEGACY_HACK_SLUGS, raw) ? LEGACY_HACK_SLUGS[raw] : undefined;
+  if (legacyId && index.has(legacyId) && rows.some(row => row.id === legacyId)) return legacyId;
 
   // 2. Tolerant: "<base>" matches "<base>-<id8>" when base is unambiguous.
   const tolerant = rows.filter((r) => {

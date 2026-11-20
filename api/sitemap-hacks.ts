@@ -1,3 +1,4 @@
+import { fetchCatalogue } from '../server/catalogue.js'
 // GET /sitemap-hacks.xml — dynamic hack sitemap (Vercel Serverless Function).
 //
 // Why this exists: static hosting cannot regenerate public/*.xml at runtime,
@@ -15,8 +16,8 @@
 //   SUPABASE_URL / SUPABASE_ANON_KEY (preferred), falling back to the
 //   existing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY so the endpoint also
 //   works before dedicated server names are configured.
-// Failure mode is a loud HTTP 500 (text/plain) + server log — never stale
-// URLs served as valid XML.
+// Configuration errors return 500; exhausted upstream retries return 503.
+// Never serve an empty or partial sitemap as a successful response.
 export default async function handler(req: any, res: any): Promise<void> {
   const SITE_URL = 'https://www.pokesmith.com'
   const SB_URL =
@@ -39,19 +40,7 @@ export default async function handler(req: any, res: any): Promise<void> {
   }
 
   try {
-    const hacks: Array<{ id: string; title: string | null; created_at: string | null }> = []
-    for (let offset = 0; ; offset += 500) {
-      const url = SB_URL.replace(/\/$/, '') + '/rest/v1/hacks?select=id,title,created_at&order=created_at.asc,id.asc&limit=500&offset=' + offset
-      const dbRes = await fetch(url, {
-        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!dbRes.ok) throw new Error('Supabase hacks query -> HTTP ' + dbRes.status)
-      const batch = await dbRes.json()
-      if (!Array.isArray(batch)) throw new Error('Invalid catalogue response')
-      hacks.push(...batch)
-      if (batch.length < 500) break
-    }
+    const hacks = await fetchCatalogue('id,title,created_at')
 
     const index = buildSlugIndex(
       (hacks || []).map((h) => ({
@@ -93,7 +82,8 @@ export default async function handler(req: any, res: any): Promise<void> {
     res.end(xml)
   } catch (err) {
     console.error('sitemap-hacks: failed to generate sitemap:', err instanceof Error ? err.message : 'unknown error')
-    res.statusCode = 500
+    res.statusCode = 503
+    res.setHeader('Retry-After', '300')
     res.setHeader('Cache-Control', 'no-store')
     res.setHeader('Content-Type', 'text/plain; charset=utf-8')
     res.end('sitemap-hacks: temporarily unavailable (database or configuration error).')

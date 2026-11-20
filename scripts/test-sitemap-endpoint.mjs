@@ -43,8 +43,10 @@ const makeRes = () => ({
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const ts = require('typescript')
+const catalogueCode = ts.transpileModule(readFileSync('server/catalogue.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
+const catalogueUrl = 'data:text/javascript;base64,' + Buffer.from(catalogueCode).toString('base64');
 const rawSrc = readFileSync(path.join(root, 'api', 'sitemap-hacks.ts'), 'utf8')
-const jsSrc = ts.transpileModule(rawSrc, {
+const jsSrc = ts.transpileModule(rawSrc.replace('../server/catalogue.js', catalogueUrl), {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
 }).outputText
 const src = jsSrc.replace(/export default async function handler/g, 'async function __handler')

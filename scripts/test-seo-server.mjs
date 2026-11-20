@@ -5,7 +5,7 @@ try { process.loadEnvFile('.env'); } catch { /* CI */ }
 const vite = await createServer({ server: { middlewareMode: true, hmr: false }, logLevel: 'error' });
 try {
   const { fetchCatalogue } = await vite.ssrLoadModule('/server/catalogue.ts');
-  const { buildSlugIndex } = await vite.ssrLoadModule('/src/lib/slug.ts');
+  const { buildSlugIndex, findIdBySlug, LEGACY_HACK_SLUGS } = await vite.ssrLoadModule('/src/lib/slug.ts');
   const { render } = await import('../server-dist/entry-server.js');
   const rows = await fetchCatalogue();
   assert(rows.length > 0);
@@ -22,6 +22,17 @@ try {
     const data = result.head.match(/type="application\/ld\+json">([\s\S]*?)<\/script>/);
     assert(data && JSON.parse(data[1])['@type'] === 'VideoGame');
     assert.deepEqual(render(`/hack/${h.id}`, rows), { status: 301, location: canonical });
+  }
+  for (const [oldSlug, id] of Object.entries(LEGACY_HACK_SLUGS)) {
+    assert(index.has(id), 'Verified alias target must still exist: ' + oldSlug);
+    assert.deepEqual(render('/hacks/' + oldSlug, rows), { status: 301, location: '/hacks/' + index.get(id) });
+    // Redirects follow the record even after another title edit.
+    const renamed = [{ id, title: 'Renamed game', createdAt: '2026-01-01' }];
+    assert.equal(findIdBySlug(buildSlugIndex(renamed), renamed, oldSlug), id);
+    assert.equal(findIdBySlug(new Map(), [], oldSlug), null, 'Removed alias targets stay missing');
+  }
+  for (const removed of ['pokemon-unbound-v2-1-1-1', 'pokemon-heartgold-retiled-expansion-v6-12-1']) {
+    assert.equal(render('/hacks/' + removed, rows).status, 404, 'Intentionally removed games stay removed');
   }
   const missing = render('/hacks/this-game-does-not-exist', rows);
   assert.equal(missing.status, 404);
