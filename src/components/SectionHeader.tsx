@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import Reveal from "./Reveal";
 import SplitHeading from "./SplitHeading";
-import { DUR, EASE } from "../lib/motion";
-import { motion, useReducedMotion } from "framer-motion";
+import { DUR, EASE, useReducedMotionSafe } from "../lib/motion";
+import { motion } from "framer-motion";
 
 type Props = {
   eyebrow?: string;
@@ -22,7 +22,7 @@ type Props = {
 };
 
 function Rule({ centered, delay }: { centered: boolean; delay: number }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionSafe();
   if (reduceMotion) {
     return <div className={`hairline mt-6 ${centered ? "mx-auto w-24" : "w-full"}`} />;
   }

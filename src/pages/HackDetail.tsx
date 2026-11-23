@@ -15,6 +15,7 @@ import { shortId, slugify } from "../lib/slug";
 import { useCatalogue, catalogueIndex, type PublicHack } from "../lib/catalogue";
 import { findIdBySlug } from "../lib/slug";
 import { useSeo } from "../lib/seo";
+import { gameMetadata } from "../lib/gameMetadata";
 
 const HOW_TO_PLAY = ["Check the required base game and revision in the release notes", "Use your own lawfully obtained base-game file", "Follow the creator instructions for the patch format", "Back up your save and use a compatible emulator"];
 const FAN_GAME_STEPS = ["Check the supported operating system and release notes", "Use the creator's installation instructions for this version", "Keep the supplied game files together when extracting an archive", "Back up your saves before installing an update"];
@@ -117,26 +118,12 @@ export default function HackDetail() {
 
   // SEO — accurate values only: the record's own title/description, and the
   // canonical slug URL. A missing record is noindexed, never described.
-  useSeo({
-    title: hack
-      ? `${hack.title} — Screenshots, Features & Setup`
-      : loading
+  useSeo(hack ? gameMetadata(hack, canonicalSlug) : {
+    title: loading
         ? "Loading…"
         : loadError ? "Temporarily unavailable" : "Hack not found",
-    description: hack?.description?.replace(/\s+/g, " ").slice(0, 160) || undefined,
     canonicalPath: canonicalSlug ? `/hacks/${canonicalSlug}` : undefined,
-    robots: hack || loading || loadError ? "index, follow" : "noindex, follow",
-    jsonLd: hack
-      ? {
-          "@context": "https://schema.org",
-          "@type": "VideoGame",
-          name: hack.title,
-          author: hack.author ? { "@type": "Person", name: hack.author } : undefined,
-          description: hack.description || undefined,
-          gamePlatform: hack.platform || undefined,
-          url: canonicalSlug ? `https://www.pokesmith.com/hacks/${canonicalSlug}` : undefined,
-        }
-      : undefined,
+    robots: loading || loadError ? "index, follow" : "noindex, follow",
   });
 
   if (loading) {

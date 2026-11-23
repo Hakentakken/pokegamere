@@ -63,18 +63,13 @@ export default function DetailHero({ hack }: Props) {
       />
 
       <div className="shell relative pt-28 pb-16 sm:pt-32">
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: DUR.component, delay: 0.1, ease: EASE.out }}
-        >
-          <Link
-            to="/hacks"
-            className="link-underline inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.25em] text-neutral-400 uppercase transition-colors duration-300 hover:text-white"
-          >
-            <span aria-hidden="true">←</span> All hacks
-          </Link>
-        </motion.div>
+        <nav aria-label="Breadcrumb" className="text-sm text-neutral-400">
+          <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <li><Link to="/" className="link-underline hover:text-white">Home</Link></li>
+            <li><span aria-hidden="true" className="mr-2">/</span><Link to="/hacks" className="link-underline hover:text-white">Hacks</Link></li>
+            <li className="min-w-0 [overflow-wrap:anywhere]"><span aria-hidden="true" className="mr-2">/</span><span aria-current="page">{hack.title}</span></li>
+          </ol>
+        </nav>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-end lg:gap-16">
           <div className="min-w-0">

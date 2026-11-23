@@ -1,6 +1,6 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { DUR, EASE, STEP, stagger, VIEWPORT } from "../lib/motion";
+import { DUR, EASE, STEP, stagger, VIEWPORT, useReducedMotionSafe } from "../lib/motion";
 
 type Props = {
   children: ReactNode;
@@ -69,7 +69,7 @@ export default function Reveal({
   index,
   step = STEP.base,
 }: Props) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionSafe();
   const offset = distance ?? y;
   const resolved = delay ?? (index === undefined ? 0 : stagger(index, step));
 

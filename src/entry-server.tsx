@@ -41,7 +41,11 @@ export function render(url: string, catalogue: PublicHack[] | null) {
     <meta property="og:url" content="${escapeHtml(canonical)}">
     <meta property="og:type" content="${escapeHtml(meta.ogType || 'website')}">
     <meta property="og:site_name" content="PokéSmith">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="${meta.image ? 'summary_large_image' : 'summary'}">
+    <meta name="twitter:title" content="${escapeHtml(title)}">
+    <meta name="twitter:description" content="${escapeHtml(meta.description || '')}">
+    ${meta.image ? `<meta property="og:image" content="${escapeHtml(meta.image)}"><meta name="twitter:image" content="${escapeHtml(meta.image)}">` : ''}
+    ${meta.image && meta.imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(meta.imageAlt)}"><meta name="twitter:image:alt" content="${escapeHtml(meta.imageAlt)}">` : ''}
     ${meta.jsonLd ? `<script id="pokesmith-jsonld" type="application/ld+json">${safeJson(meta.jsonLd)}</script>` : ''}`;
   return { status, html, head, data: safeJson(catalogue) };
 }

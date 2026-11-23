@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 /**
  * ============================================================
@@ -64,8 +63,19 @@ export const SPRING = {
  * True when the user has asked for less motion — the case where every
  * non-essential animation must be dropped or simplified.
  */
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
+const serverMotionPreference = () => false;
+const readMotionPreference = () => window.matchMedia(reducedMotionQuery).matches;
+function subscribeMotionPreference(onChange: () => void) {
+  const query = window.matchMedia(reducedMotionQuery);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
 export function useReducedMotionSafe() {
-  return !!useReducedMotion();
+  // The first hydration render must match SSR. Read the actual preference
+  // immediately afterwards, and keep responding to OS preference changes.
+  return useSyncExternalStore(subscribeMotionPreference, readMotionPreference, serverMotionPreference);
 }
 
 /**
@@ -93,7 +103,7 @@ export function useCoarsePointer() {
  * `parallax` is only true on a mouse-driven, motion-tolerant viewport.
  */
 export function useMotionPrefs() {
-  const reduced = !!useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const coarse = useCoarsePointer();
   return { reduced, coarse, parallax: !reduced && !coarse };
 }

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useReducedMotion } from "framer-motion";
-import { EASE } from "../../lib/motion";
+import { EASE, useReducedMotionSafe } from "../../lib/motion";
 
 type Stats = { hacks: number; cheats: number; emulators: number } | null | undefined;
 
@@ -19,7 +18,7 @@ const STAT_LABELS: { key: keyof NonNullable<Stats>; label: string }[] = [
  * with it. Skipped entirely under reduced motion.
  */
 export default function HeroCopy({ stats }: { stats?: Stats }) {
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
   const from = (delay: number, distance = 18) =>
     reduced
       ? {}

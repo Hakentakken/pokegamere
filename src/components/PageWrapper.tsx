@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { EASE } from "../lib/motion";
+import { motion } from "framer-motion";
+import { EASE, useReducedMotionSafe } from "../lib/motion";
 
 type Props = {
   children: ReactNode;
@@ -21,7 +21,7 @@ type Props = {
  * registers as settling rather than scrolling.
  */
 export default function PageWrapper({ children, animateEntrance = true }: Props) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionSafe();
 
   return (
     <motion.div

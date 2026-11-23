@@ -4,13 +4,19 @@ import { createServer } from 'vite';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 try { process.loadEnvFile('.env'); } catch { /* CI */ }
-const vite = await createServer({ server: { middlewareMode: true, hmr: false }, logLevel: 'error' });
+const vite = await createServer({ server: { middlewareMode: true, hmr: false }, ssr: { external: ['react', 'react/jsx-runtime'] }, logLevel: 'error' });
 try {
   const { fetchCatalogue } = await vite.ssrLoadModule('/server/catalogue.ts');
   const { buildSlugIndex, findIdBySlug, LEGACY_HACK_SLUGS } = await vite.ssrLoadModule('/src/lib/slug.ts');
+  const { gameMetadata } = await vite.ssrLoadModule('/src/lib/gameMetadata.ts');
   const { render } = await import('../server-dist/entry-server.js');
   const rows = await fetchCatalogue();
   assert(rows.length > 0);
+  const metadata = gameMetadata({ ...rows[0], title: 'Example Adventure', platform: 'GBA / ROM Hack', cover_image: 'javascript:alert(1)', download_link: '' }, 'example-adventure');
+  assert.equal(metadata.title, 'Example Adventure (GBA) — Game Details');
+  assert.equal(metadata.image, undefined, 'Unsafe image schemes are excluded from metadata');
+  assert(!gameMetadata({ ...rows[0], title: 'Example GBA', platform: 'GBA' }, 'example-gba').title.includes('(GBA)'), 'Do not repeat a platform already in the title');
+  assert(!gameMetadata({ ...rows[0], title: 'Example PC Game', platform: 'RPGXP' }, 'example-pc').title.includes('GBA'), 'Do not mislabel standalone games');
   const index = buildSlugIndex(rows.map(row => ({ ...row, createdAt: row.created_at })));
   for (const h of rows) {
     const canonical = `/hacks/${index.get(h.id)}`;
@@ -24,8 +30,21 @@ try {
     assert(result.html.indexOf('id="screenshots"') < result.html.indexOf('id="downloads"'));
     assert(!result.html.includes('href="/patcher"'));
     const data = result.head.match(/type="application\/ld\+json">([\s\S]*?)<\/script>/);
-    assert(data && JSON.parse(data[1])['@type'] === 'VideoGame');
-    assert.equal(JSON.parse(data[1]).description, h.description, 'Structured data uses the reviewed description');
+    assert(data);
+    const structured = JSON.parse(data[1]);
+    const game = structured.find(item => item['@type'] === 'VideoGame');
+    const breadcrumb = structured.find(item => item['@type'] === 'BreadcrumbList');
+    assert.equal(game.name, h.title);
+    assert.equal(game.description, h.description, 'Structured data uses the reviewed description');
+    assert.equal(game.url, 'https://www.pokesmith.com' + canonical);
+    assert.deepEqual(breadcrumb.itemListElement.map(item => item.position), [1, 2, 3]);
+    assert.equal(breadcrumb.itemListElement[2].item, game.url);
+    assert.equal(breadcrumb.itemListElement[2].name, h.title);
+    assert(result.html.includes('aria-label="Breadcrumb"'));
+    if (game.image) {
+      assert(result.head.includes('property="og:image"'));
+      assert(result.head.includes('name="twitter:image"'));
+    }
     const escapedDescription = renderToStaticMarkup(createElement('span', null, h.description)).slice(6, -7);
     assert(result.html.includes(escapedDescription), 'Visible page includes the full reviewed description: ' + h.title);
     assert.deepEqual(render(`/hack/${h.id}`, rows), { status: 301, location: canonical });

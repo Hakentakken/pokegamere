@@ -1,5 +1,5 @@
-import { motion, useReducedMotion } from "framer-motion";
-import { DUR, EASE, STEP, VIEWPORT } from "../lib/motion";
+import { motion } from "framer-motion";
+import { DUR, EASE, STEP, VIEWPORT, useReducedMotionSafe } from "../lib/motion";
 
 type Props = {
   text: string;
@@ -44,7 +44,7 @@ export default function SplitHeading({
   sub,
   subClassName = "",
 }: Props) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionSafe();
   const words = text.split(" ");
 
   if (reduceMotion) {

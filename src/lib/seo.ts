@@ -23,6 +23,9 @@ export type SeoOptions = {
   robots?: string;
   /** Open Graph type; defaults to "website". */
   ogType?: string;
+  /** Public preview image, shared by server HTML and client navigation. */
+  image?: string;
+  imageAlt?: string;
   /** One JSON-LD object (or array) injected as <script type="application/ld+json">. */
   jsonLd?: unknown;
 };
@@ -52,10 +55,12 @@ export function useSeo({
   canonicalPath,
   robots = "index, follow",
   ogType = "website",
+  image,
+  imageAlt,
   jsonLd,
 }: SeoOptions) {
   const collector = useContext(SeoContext);
-  if (collector) collector.current = { title, description, canonicalPath, robots, ogType, jsonLd };
+  if (collector) collector.current = { title, description, canonicalPath, robots, ogType, image, imageAlt, jsonLd };
   useEffect(() => {
     const fullTitle = title === SITE_NAME || title.endsWith(`| ${SITE_NAME}`) ? title : `${title} | ${SITE_NAME}`;
     document.title = fullTitle;
@@ -73,7 +78,16 @@ export function useSeo({
     upsertTag("meta", { property: "og:type" }, { content: ogType });
     upsertTag("meta", { property: "og:description" }, { content: description || '' });
     if (canonical) upsertTag("meta", { property: "og:url" }, { content: canonical });
-    upsertTag("meta", { name: "twitter:card" }, { content: "summary" });
+    else document.head.querySelector('meta[property="og:url"]')?.remove();
+    upsertTag("meta", { name: "twitter:card" }, { content: image ? "summary_large_image" : "summary" });
+    upsertTag("meta", { name: "twitter:title" }, { content: fullTitle });
+    upsertTag("meta", { name: "twitter:description" }, { content: description || '' });
+    for (const key of ['og:image', 'og:image:alt', 'twitter:image', 'twitter:image:alt']) {
+      const selector = key.startsWith('og:') ? { property: key } : { name: key };
+      const content = key.endsWith(':alt') ? (image ? imageAlt : undefined) : image;
+      if (content) upsertTag('meta', selector, { content });
+      else document.head.querySelector(`meta[${key.startsWith('og:') ? 'property' : 'name'}="${key}"]`)?.remove();
+    }
 
     // JSON-LD: one script per page, replaced on navigation, removed when the
     // next page does not provide any (so stale structured data never lingers).
@@ -86,5 +100,5 @@ export function useSeo({
       script.textContent = JSON.stringify(jsonLd);
       if (!existing) document.head.appendChild(script);
     }
-  }, [title, description, canonicalPath, robots, ogType, jsonLd]);
+  }, [title, description, canonicalPath, robots, ogType, image, imageAlt, jsonLd]);
 }

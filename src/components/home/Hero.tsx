@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useReducedMotionSafe } from "../../lib/motion";
 import Atmosphere from "../Atmosphere";
 import HeroArt from "./HeroArt";
 import HeroCopy from "./HeroCopy";
@@ -21,7 +22,7 @@ type Props = {
  */
 export default function Hero({ covers, stats }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionSafe();
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
