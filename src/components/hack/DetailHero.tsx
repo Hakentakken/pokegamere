@@ -4,7 +4,6 @@ import Atmosphere from "../Atmosphere";
 import CoverImage from "../CoverImage";
 import Parallax from "../Parallax";
 import Reveal from "../Reveal";
-import SplitHeading from "../SplitHeading";
 import { MetaChips, Stars } from "../HackMeta";
 import { DUR, EASE, stagger } from "../../lib/motion";
 
@@ -78,7 +77,7 @@ export default function DetailHero({ hack }: Props) {
         </motion.div>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-end lg:gap-16">
-          <div>
+          <div className="min-w-0">
             <Reveal as="left" delay={0.12}>
               <span className="eyebrow">
                 <span className="h-px w-8 bg-brand/70" aria-hidden="true" />
@@ -86,13 +85,12 @@ export default function DetailHero({ hack }: Props) {
               </span>
             </Reveal>
 
-            <Reveal as="mask" delay={0.16}>
-              <SplitHeading
-                as="h1"
-                text={hack.title}
-                className="type-display mt-6 font-display font-bold text-white"
-              />
-            </Reveal>
+            {/* Essential identity stays visible without scroll observers or JS.
+                Observing translated words inside overflow masks can leave them
+                permanently outside the observer's visible intersection. */}
+            <h1 className="type-display mt-6 font-display font-bold text-white [overflow-wrap:anywhere]">
+              {hack.title}
+            </h1>
 
             <Reveal as="up" delay={0.26}>
               <p className="mt-4 font-display text-lg text-brand-400">

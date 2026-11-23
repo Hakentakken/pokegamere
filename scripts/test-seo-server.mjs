@@ -18,7 +18,9 @@ try {
     assert.equal(result.status, 200, canonical);
     assert.match(result.head, /name="robots" content="index, follow"/);
     assert(result.head.includes(`href="https://www.pokesmith.com${canonical}"`));
-    assert.match(result.html, /<h1/);
+    const heading = result.html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/);
+    const escapedTitle = renderToStaticMarkup(createElement('span', null, h.title)).slice(6, -7);
+    assert.equal(heading?.[1], escapedTitle, 'Full title must render as visible text, without hidden word masks: ' + h.title);
     assert(result.html.indexOf('id="screenshots"') < result.html.indexOf('id="downloads"'));
     assert(!result.html.includes('href="/patcher"'));
     const data = result.head.match(/type="application\/ld\+json">([\s\S]*?)<\/script>/);

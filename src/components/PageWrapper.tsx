@@ -4,6 +4,8 @@ import { EASE } from "../lib/motion";
 
 type Props = {
   children: ReactNode;
+  /** Keep essential page content visible in SSR and before hydration. */
+  animateEntrance?: boolean;
 };
 
 /**
@@ -18,12 +20,12 @@ type Props = {
  * The vertical travel is 8px, an order of magnitude below a line of text, so it
  * registers as settling rather than scrolling.
  */
-export default function PageWrapper({ children }: Props) {
+export default function PageWrapper({ children, animateEntrance = true }: Props) {
   const reduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8 }}
+      initial={animateEntrance && !reduceMotion ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.4, ease: EASE.out }}
       className="relative"

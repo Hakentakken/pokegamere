@@ -170,7 +170,7 @@ export default function HackDetail() {
   const features = parseTextList(hack.features);
 
   return (
-    <PageWrapper>
+    <PageWrapper animateEntrance={false}>
       <DetailHero hack={hack} />
 
       {/* SCREENSHOTS */}
