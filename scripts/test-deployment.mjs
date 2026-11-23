@@ -15,7 +15,7 @@ try {
   await mkdir(path.join(sandbox, 'dist'));
   await cp(path.join(root, 'dist/index.html'), path.join(sandbox, 'dist/index.html'));
   await writeFile(path.join(sandbox, 'package.json'), '{"type":"module"}');
-  for (const source of ['api/page.ts', 'api/sitemap-hacks.ts', 'server/catalogue.ts']) {
+  for (const source of ['api/page.ts', 'api/sitemap-hacks.ts', 'src/data/catalogueDescriptions.ts', 'src/lib/catalogueContent.ts', 'server/catalogue.ts']) {
     const target = path.join(sandbox, source.replace(/\.ts$/, '.js'));
     await mkdir(path.dirname(target), { recursive: true });
     const { outputText } = ts.transpileModule(await readFile(path.join(root, source), 'utf8'), {

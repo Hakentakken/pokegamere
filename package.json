@@ -15,6 +15,7 @@
     "check:seo-server": "node scripts/test-catalogue-resilience.mjs && node scripts/test-seo-server.mjs && node scripts/test-sitemap-pagination.mjs && node scripts/test-deployment.mjs && node scripts/test-discovery.mjs && node scripts/test-indexing-audit.mjs",
     "preview:seo": "node scripts/preview-seo.mjs",
     "audit:content": "node scripts/audit-content.mjs",
+    "check:content": "node scripts/test-catalogue-content.mjs",
     "search-console": "node scripts/search-console.mjs",
     "check:vcdiff": "node check-vcdiff-lzma.mjs",
     "preview": "vite preview",

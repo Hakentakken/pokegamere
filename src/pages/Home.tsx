@@ -10,6 +10,7 @@ import ProcessBand from "../components/home/ProcessBand";
 import StudioBand from "../components/home/StudioBand";
 import FieldGuideBand from "../components/home/FieldGuideBand";
 import { supabase } from "../lib/supabase";
+import { withReviewedContent } from "../lib/catalogueContent";
 import { normalizeImageUrl } from "../lib/imageUrl";
 import type { HackRecord } from "../components/FeaturedHack";
 
@@ -68,7 +69,7 @@ export default function Home() {
       return;
     }
 
-    const formatted: HackRecord[] = (data || []).map((hack: any) => ({
+    const formatted: HackRecord[] = (data || []).map(withReviewedContent).map((hack: any) => ({
       id: String(hack.id),
       title: hack.title,
       author: hack.author,

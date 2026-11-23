@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'vite';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 try { process.loadEnvFile('.env'); } catch { /* CI */ }
 const vite = await createServer({ server: { middlewareMode: true, hmr: false }, logLevel: 'error' });
 try {
@@ -21,6 +23,9 @@ try {
     assert(!result.html.includes('href="/patcher"'));
     const data = result.head.match(/type="application\/ld\+json">([\s\S]*?)<\/script>/);
     assert(data && JSON.parse(data[1])['@type'] === 'VideoGame');
+    assert.equal(JSON.parse(data[1]).description, h.description, 'Structured data uses the reviewed description');
+    const escapedDescription = renderToStaticMarkup(createElement('span', null, h.description)).slice(6, -7);
+    assert(result.html.includes(escapedDescription), 'Visible page includes the full reviewed description: ' + h.title);
     assert.deepEqual(render(`/hack/${h.id}`, rows), { status: 301, location: canonical });
   }
   for (const [oldSlug, id] of Object.entries(LEGACY_HACK_SLUGS)) {

@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
-const catalogueCode = ts.transpileModule(readFileSync('server/catalogue.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const catalogueUrl = 'data:text/javascript;base64,' + Buffer.from(catalogueCode).toString('base64');
+import { catalogueModuleUrl as catalogueUrl } from './lib/catalogue-test-module.mjs';
 const code = ts.transpileModule(readFileSync('api/sitemap-hacks.ts', 'utf8').replace('../server/catalogue.js', catalogueUrl), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 const { default: handler } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
 const original = globalThis.fetch;

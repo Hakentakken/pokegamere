@@ -1,3 +1,5 @@
+import { withReviewedContent } from '../src/lib/catalogueContent.js';
+
 // Public, RLS-filtered reads only. Never use a service-role key for page rendering.
 export const HACK_FIELDS = 'id,title,created_at,author,description,base_game,platform,status,rating,cover_image,download_link,screenshots,features';
 const inFlight = new Map<string, ReturnType<typeof readCatalogue>>();
@@ -54,7 +56,7 @@ async function readCatalogue(origin: string, key: string, fields: string) {
       await new Promise(resolve => setTimeout(resolve, 150));
     }
     if (!Array.isArray(batch)) throw new Error('Invalid catalogue response');
-    rows.push(...batch);
+    rows.push(...batch.map(withReviewedContent));
     if (batch.length < 500) return rows;
   }
 }

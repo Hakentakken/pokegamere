@@ -10,7 +10,7 @@ const savedFetch = globalThis.fetch;
 const savedEnv = { ...process.env };
 try {
   await writeFile(path.join(sandbox, 'package.json'), '{"type":"module"}');
-  for (const source of ['src/lib/slug.ts', 'src/lib/notifyDiscovery.ts', 'server/catalogue.ts', 'server/discovery.ts', 'api/feed.ts', 'api/notify-discovery.ts']) {
+  for (const source of ['src/lib/slug.ts', 'src/lib/notifyDiscovery.ts', 'src/data/catalogueDescriptions.ts', 'src/lib/catalogueContent.ts', 'server/catalogue.ts', 'server/discovery.ts', 'api/feed.ts', 'api/notify-discovery.ts']) {
     const target = path.join(sandbox, source.replace(/\.ts$/, '.js'));
     await mkdir(path.dirname(target), { recursive: true });
     const { outputText } = ts.transpileModule(await readFile(source, 'utf8'), {

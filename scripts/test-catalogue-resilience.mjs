@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import ts from 'typescript';
-const code = ts.transpileModule(readFileSync('server/catalogue.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { fetchCatalogue } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'));
+import { catalogueModuleUrl } from './lib/catalogue-test-module.mjs';
+const { fetchCatalogue } = await import(catalogueModuleUrl);
 process.env.SUPABASE_URL = 'https://example.invalid';
 process.env.SUPABASE_ANON_KEY = 'test-public-key';
 const game = { id: 'one', title: 'Test' };

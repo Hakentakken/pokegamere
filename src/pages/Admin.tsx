@@ -1,5 +1,6 @@
 import PublishingChecklist from "../components/PublishingChecklist";
 import ContentReviewQueue from "../components/ContentReviewQueue";
+import { withReviewedContent } from "../lib/catalogueContent";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -111,7 +112,7 @@ export default function Admin() {
       .order("created_at", { ascending: false });
     const { data: cheatsData } = await supabase.from("cheats").select(CHEAT_COLUMNS);
     const { data: emuData } = await supabase.from("emulators").select(EMULATOR_COLUMNS);
-    setHacks(hacksData || []);
+    setHacks((hacksData || []).map(withReviewedContent));
     setCheats(cheatsData || []);
     setEmulators(emuData || []);
   };

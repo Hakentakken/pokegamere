@@ -7,6 +7,7 @@ import PageHero from "../components/PageHero";
 import Skeleton from "../components/Skeleton";
 import CtaBand from "../components/CtaBand";
 import { supabase } from "../lib/supabase";
+import { withReviewedContent } from "../lib/catalogueContent";
 import { useSeo } from "../lib/seo";
 import { DUR, EASE } from "../lib/motion";
 
@@ -99,7 +100,7 @@ export default function Hacks() {
     }
 
     // 🔥 Map DB → Frontend format
-    const formatted: Hack[] = (data || []).map((hack: any) => ({
+    const formatted: Hack[] = (data || []).map(withReviewedContent).map((hack: any) => ({
       id: String(hack.id),
       title: hack.title,
       author: hack.author,

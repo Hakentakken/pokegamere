@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { withReviewedContent } from "../lib/catalogueContent";
 import PageWrapper from "../components/PageWrapper";
 import HackCard from "../components/HackCard";
 import Loader from "../components/Loader";
@@ -28,11 +29,12 @@ export default function HackDetail() {
   const catalogue = useCatalogue();
   const initialIndex = catalogue ? catalogueIndex(catalogue) : null;
   const initialId = catalogue && initialIndex ? (id || findIdBySlug(initialIndex, catalogue, slug)) : null;
-  const initialHack = catalogue?.find(row => row.id === initialId) || null;
+  const initialRow = catalogue?.find(row => row.id === initialId);
+  const initialHack = initialRow ? withReviewedContent(initialRow) : null;
   const [hack, setHack] = useState<PublicHack | null>(initialHack);
   const [loadError, setLoadError] = useState(false);
   const [canonicalSlug, setCanonicalSlug] = useState<string | null>(initialId ? initialIndex?.get(initialId) || null : null);
-  const [related, setRelated] = useState<PublicHack[]>(() => catalogue?.filter(row => row.id !== initialId && row.base_game === initialHack?.base_game).slice(0, 3) || []);
+  const [related, setRelated] = useState<PublicHack[]>(() => catalogue?.filter(row => row.id !== initialId && row.base_game === initialHack?.base_game).slice(0, 3).map(withReviewedContent) || []);
   const [loading, setLoading] = useState(!catalogue);
 
   // Guards against a slow fetch for one hack painting over the next one when
@@ -94,7 +96,7 @@ export default function HackDetail() {
         return;
       }
 
-      setHack(data);
+      setHack(withReviewedContent(data));
       setCanonicalSlug(canonical);
 
       const { data: relatedData } = await supabase
@@ -104,7 +106,7 @@ export default function HackDetail() {
         .neq("id", recordId)
         .limit(3);
 
-      if (request === requestId.current) setRelated(relatedData || []);
+      if (request === requestId.current) setRelated((relatedData || []).map(withReviewedContent));
     } catch (err) {
       if (request === requestId.current) setLoadError(true);
       console.error(err);

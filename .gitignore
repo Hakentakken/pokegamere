@@ -29,6 +29,7 @@ dist-ssr
 !.env.example
 
 # local verification artifacts
+.content-review/
 connection-check.txt
 verify-images.txt
 verify-ui.txt

@@ -162,6 +162,27 @@ Currently, two official plugins are available:
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
+## Reviewed catalogue descriptions
+
+The 53 remaining editorial reviews from November 23, 2026 are in
+`src/data/catalogueDescriptions.ts`, with original text and research references.
+Deploying this code publishes the new descriptions on catalogue cards, detail
+pages, server-rendered HTML, search metadata, feeds and the admin editor. The
+existing review checks remain unchanged. Emerald Azure is also corrected to
+beta and The Shadow Realm to demo, matching their documented release progress.
+
+`src/lib/catalogueContent.ts` applies each revision only when its ID, title and
+original description still match. Subsequent description edits in the admin
+panel take precedence. Images, screenshots, download/Drive URLs, features and
+other catalogue fields are preserved. These revisions are versioned in Git;
+deployment does not rewrite Supabase records. Saving a revised listing through
+the normal admin editor persists its displayed content to Supabase.
+
+Run `npm run check:content` for content and preservation tests. With public
+Supabase environment variables configured, run
+`npm run check:content -- --live` to audit the real catalogue without writing to
+the database. `npm run audit:content` also includes the reviewed copy.
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
