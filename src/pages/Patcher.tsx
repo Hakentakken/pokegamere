@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import PageWrapper from "../components/PageWrapper";
+import DownloadLink from "../components/DownloadLink";
 import Atmosphere from "../components/Atmosphere";
 import SplitHeading from "../components/SplitHeading";
 import Reveal from "../components/Reveal";
@@ -392,13 +393,13 @@ export default function Patcher() {
                   ))}
                 </select>
                 {selectedHack?.download_link && (
-                  <button
-                    type="button"
+                  <DownloadLink
+                    href={selectedHack.download_link}
+                    target="_blank"
                     className="btn-hero-ghost shrink-0"
-                    onClick={() => window.open(selectedHack.download_link!, "_blank", "noopener")}
                   >
                     Get the patch file
-                  </button>
+                  </DownloadLink>
                 )}
               </div>
               {selectedHack && (
@@ -599,13 +600,13 @@ export default function Patcher() {
                             <p className="truncate text-xs text-emerald-400">
                               {output.name} is ready — check your downloads.
                             </p>
-                            <a
+                            <DownloadLink
                               href={output.url}
                               download={output.name}
                               className="btn-ghost mt-2 inline-flex"
                             >
                               Download again
-                            </a>
+                            </DownloadLink>
                           </div>
                         )}
                       </>

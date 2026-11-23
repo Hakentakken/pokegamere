@@ -8,6 +8,7 @@ import CtaBand from "../components/CtaBand";
 import { DUR, EASE, stagger } from "../lib/motion";
 import { useSeo } from "../lib/seo";
 import EmulatorGuide from "../components/EmulatorGuide";
+import DownloadLink from "../components/DownloadLink";
 
 export default function Emulators() {
   useSeo({
@@ -75,14 +76,13 @@ export default function Emulators() {
 
                 <div className="relative mt-auto pt-5">
                   {e.download_link ? (
-                    <a
+                    <DownloadLink
                       href={e.download_link}
                       target="_blank"
-                      rel="noreferrer"
                       className="block rounded-lg bg-brand px-4 py-2.5 text-center text-sm font-semibold text-oncolor transition duration-300 hover:bg-brand-600 hover:shadow-glow-sm"
                     >
                       Download
-                    </a>
+                    </DownloadLink>
                   ) : (
                     <span className="block rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2.5 text-center text-sm text-neutral-500">
                       Consult the official project documentation before installing.

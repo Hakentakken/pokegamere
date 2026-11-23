@@ -1,3 +1,5 @@
+import DownloadLink from './DownloadLink';
+
 export default function EmulatorGuide() {
   return <article className="shell band-tight space-y-10 text-neutral-300 leading-relaxed">
     <section className="max-w-3xl">
@@ -8,7 +10,7 @@ export default function EmulatorGuide() {
     <section>
       <h2 className="font-display text-2xl font-bold text-white">Official projects and documentation</h2>
       <div className="mt-5 grid gap-6 md:grid-cols-2">
-        <div className="glass rounded-2xl p-6"><h3 className="font-display text-xl font-bold text-white">mGBA</h3><p className="mt-3">A Game Boy Advance emulator with desktop builds. Start with the official download page and select the build for your operating system. Check a hack's release notes for emulator-specific requirements; GBA support does not guarantee compatibility with every modification.</p><a className="link-underline mt-4 inline-block text-brand-400" href="https://mgba.io/">mGBA official website and downloads</a></div>
+        <div className="glass rounded-2xl p-6"><h3 className="font-display text-xl font-bold text-white">mGBA</h3><p className="mt-3">A Game Boy Advance emulator with desktop builds. Start with the official download page and select the build for your operating system. Check a hack's release notes for emulator-specific requirements; GBA support does not guarantee compatibility with every modification.</p><DownloadLink className="link-underline mt-4 inline-block text-brand-400" href="https://mgba.io/">mGBA official website and downloads</DownloadLink></div>
         <div className="glass rounded-2xl p-6"><h3 className="font-display text-xl font-bold text-white">Delta</h3><p className="mt-3">For players considering Delta on Apple mobile devices, use the official user guide to check supported systems, installation options and importing games. Availability can depend on your device and region. Read the save-management instructions before moving an existing playthrough.</p><a className="link-underline mt-4 inline-block text-brand-400" href="https://faq.deltaemulator.com/">Delta official user guide</a></div>
       </div>
       <p className="mt-4 text-sm text-neutral-400">These are project documentation links, not mirrors or paid placements. This guide does not claim that PokéSmith has tested every hack on these emulators.</p>

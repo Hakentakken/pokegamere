@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Atmosphere from "../Atmosphere";
 import Reveal from "../Reveal";
+import DownloadLink from "../DownloadLink";
 import SplitHeading from "../SplitHeading";
 import { DUR, EASE, stagger } from "../../lib/motion";
 import type { DetailHack } from "./DetailHero";
@@ -90,9 +91,9 @@ export default function DownloadBand({ hack, steps }: Props) {
 
               <div className="mt-8 flex flex-wrap gap-3">
                 {source && (
-                  <a href={source.href} target="_blank" rel="noopener noreferrer" className="btn-hero group">
+                  <DownloadLink href={source.href} target="_blank" className="btn-hero group">
                     Visit download page ↗
-                  </a>
+                  </DownloadLink>
                 )}
                 <Link to="/emulators" className="btn-hero-ghost">
                   Get an emulator

@@ -20,6 +20,14 @@ Vercel uses explicit ordered `routes` so `/`, `/sitemap-hacks.xml` and `/feed.xm
 - Local `npm run dev` and ordinary `npm run preview` are client-only. To exercise the production HTML and HTTP behavior, run `npm run build`, then `npm run preview:seo` (http://127.0.0.1:4175).
 - Run `npm run check:seo`, then `npm run check:seo-server`. `node scripts/test-sitemap-endpoint.mjs` checks the real live database against the sitemap; `npm run audit:content` identifies catalogue entries needing editorial attention.
 
+### Download links
+
+Use `src/components/DownloadLink.tsx` for all download buttons and download-page
+links. It always renders `rel="nofollow noopener noreferrer"` while preserving
+the supplied URL, label, styling and target. Existing and future game listings
+inherit this policy through `DownloadBand`; no per-listing database edit is needed.
+Keep ordinary internal navigation and documentation links separate.
+
 ### Search Console from this workspace
 
 The VS Code Google Search Console MCP extension stores credentials outside this repository. The local fallback utility reads its ADC file without printing tokens:
